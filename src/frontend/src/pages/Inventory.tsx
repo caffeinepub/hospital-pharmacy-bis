@@ -63,6 +63,281 @@ const CATEGORIES = [
   "Ulcer & Others",
 ];
 
+// ── Static fallback: always shown when backend returns empty ──
+const STATIC_MEDICINES = [
+  {
+    id: 1n,
+    name: "ConCor",
+    category: "Hypertension",
+    dosage: "2.5mg",
+    quantity: 200n,
+    supplierId: 1n,
+    unitPrice: 4.5,
+    expiryDate: "2027-01-15",
+    isNearExpiry: false,
+  },
+  {
+    id: 2n,
+    name: "ConCor",
+    category: "Hypertension",
+    dosage: "5mg",
+    quantity: 150n,
+    supplierId: 1n,
+    unitPrice: 5.75,
+    expiryDate: "2026-04-01",
+    isNearExpiry: true,
+  },
+  {
+    id: 3n,
+    name: "ConCor",
+    category: "Hypertension",
+    dosage: "10mg",
+    quantity: 180n,
+    supplierId: 1n,
+    unitPrice: 7.2,
+    expiryDate: "2026-12-20",
+    isNearExpiry: false,
+  },
+  {
+    id: 4n,
+    name: "ErastaPex",
+    category: "Hypertension",
+    dosage: "20mg",
+    quantity: 120n,
+    supplierId: 2n,
+    unitPrice: 8.5,
+    expiryDate: "2027-03-10",
+    isNearExpiry: false,
+  },
+  {
+    id: 5n,
+    name: "ErastaPex",
+    category: "Hypertension",
+    dosage: "40mg",
+    quantity: 100n,
+    supplierId: 2n,
+    unitPrice: 11.0,
+    expiryDate: "2027-06-30",
+    isNearExpiry: false,
+  },
+  {
+    id: 6n,
+    name: "Augmentin",
+    category: "Antibiotics",
+    dosage: "1g",
+    quantity: 90n,
+    supplierId: 3n,
+    unitPrice: 15.5,
+    expiryDate: "2026-04-05",
+    isNearExpiry: true,
+  },
+  {
+    id: 7n,
+    name: "SupraX",
+    category: "Antibiotics",
+    dosage: "400mg",
+    quantity: 110n,
+    supplierId: 3n,
+    unitPrice: 12.0,
+    expiryDate: "2027-02-28",
+    isNearExpiry: false,
+  },
+  {
+    id: 8n,
+    name: "Tavanic",
+    category: "Antibiotics",
+    dosage: "500mg",
+    quantity: 80n,
+    supplierId: 3n,
+    unitPrice: 18.0,
+    expiryDate: "2026-11-15",
+    isNearExpiry: false,
+  },
+  {
+    id: 9n,
+    name: "Ceftriaxone",
+    category: "Antibiotics",
+    dosage: "1g",
+    quantity: 60n,
+    supplierId: 3n,
+    unitPrice: 22.5,
+    expiryDate: "2027-01-20",
+    isNearExpiry: false,
+  },
+  {
+    id: 10n,
+    name: "Flagyl",
+    category: "Antibiotics",
+    dosage: "500mg",
+    quantity: 130n,
+    supplierId: 4n,
+    unitPrice: 6.75,
+    expiryDate: "2026-10-31",
+    isNearExpiry: false,
+  },
+  {
+    id: 11n,
+    name: "Amaryl",
+    category: "Diabetes",
+    dosage: "1mg",
+    quantity: 200n,
+    supplierId: 2n,
+    unitPrice: 9.5,
+    expiryDate: "2027-04-15",
+    isNearExpiry: false,
+  },
+  {
+    id: 12n,
+    name: "Amaryl",
+    category: "Diabetes",
+    dosage: "2mg",
+    quantity: 180n,
+    supplierId: 2n,
+    unitPrice: 12.0,
+    expiryDate: "2027-04-15",
+    isNearExpiry: false,
+  },
+  {
+    id: 13n,
+    name: "Glucophage",
+    category: "Diabetes",
+    dosage: "500mg",
+    quantity: 250n,
+    supplierId: 4n,
+    unitPrice: 5.5,
+    expiryDate: "2027-08-20",
+    isNearExpiry: false,
+  },
+  {
+    id: 14n,
+    name: "Glucophage",
+    category: "Diabetes",
+    dosage: "1000mg",
+    quantity: 220n,
+    supplierId: 4n,
+    unitPrice: 8.0,
+    expiryDate: "2027-08-20",
+    isNearExpiry: false,
+  },
+  {
+    id: 15n,
+    name: "Galvus Met",
+    category: "Diabetes",
+    dosage: "50/1000mg",
+    quantity: 90n,
+    supplierId: 2n,
+    unitPrice: 24.0,
+    expiryDate: "2026-09-30",
+    isNearExpiry: false,
+  },
+  {
+    id: 16n,
+    name: "Controloc",
+    category: "Ulcer & Others",
+    dosage: "40mg",
+    quantity: 160n,
+    supplierId: 1n,
+    unitPrice: 9.25,
+    expiryDate: "2027-05-10",
+    isNearExpiry: false,
+  },
+  {
+    id: 17n,
+    name: "Nexium",
+    category: "Ulcer & Others",
+    dosage: "40mg",
+    quantity: 140n,
+    supplierId: 2n,
+    unitPrice: 11.5,
+    expiryDate: "2027-07-22",
+    isNearExpiry: false,
+  },
+  {
+    id: 18n,
+    name: "Pantoloc",
+    category: "Ulcer & Others",
+    dosage: "20mg",
+    quantity: 120n,
+    supplierId: 3n,
+    unitPrice: 7.8,
+    expiryDate: "2026-12-05",
+    isNearExpiry: false,
+  },
+  {
+    id: 19n,
+    name: "Ator",
+    category: "Ulcer & Others",
+    dosage: "20mg",
+    quantity: 100n,
+    supplierId: 4n,
+    unitPrice: 8.5,
+    expiryDate: "2027-02-14",
+    isNearExpiry: false,
+  },
+  {
+    id: 20n,
+    name: "Crestor",
+    category: "Ulcer & Others",
+    dosage: "10mg",
+    quantity: 110n,
+    supplierId: 1n,
+    unitPrice: 14.0,
+    expiryDate: "2027-09-18",
+    isNearExpiry: false,
+  },
+  {
+    id: 21n,
+    name: "Aspirin",
+    category: "Ulcer & Others",
+    dosage: "100mg",
+    quantity: 300n,
+    supplierId: 4n,
+    unitPrice: 2.5,
+    expiryDate: "2027-11-30",
+    isNearExpiry: false,
+  },
+  {
+    id: 22n,
+    name: "Bisoprolol",
+    category: "Hypertension",
+    dosage: "5mg",
+    quantity: 150n,
+    supplierId: 2n,
+    unitPrice: 6.0,
+    expiryDate: "2027-01-25",
+    isNearExpiry: false,
+  },
+  {
+    id: 23n,
+    name: "Metformin",
+    category: "Diabetes",
+    dosage: "850mg",
+    quantity: 200n,
+    supplierId: 3n,
+    unitPrice: 4.75,
+    expiryDate: "2027-06-10",
+    isNearExpiry: false,
+  },
+  {
+    id: 24n,
+    name: "Omeprazole",
+    category: "Ulcer & Others",
+    dosage: "20mg",
+    quantity: 180n,
+    supplierId: 4n,
+    unitPrice: 3.8,
+    expiryDate: "2027-10-05",
+    isNearExpiry: false,
+  },
+];
+
+const STATIC_SUPPLIER_MAP: Record<string, string> = {
+  "1": "Ibn Sina",
+  "2": "Pharma Overseas",
+  "3": "United Pharma",
+  "4": "Al-Ezaby",
+};
+
 type FormData = {
   name: string;
   category: string;
@@ -99,10 +374,16 @@ export function Inventory() {
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
   const [search, setSearch] = useState("");
 
-  const supplierName = (id: bigint) =>
-    suppliers?.find((s) => s.id === id)?.name ?? `#${id}`;
+  // Use backend data if available, else static fallback
+  const displayMedicines =
+    medicines && medicines.length > 0 ? medicines : STATIC_MEDICINES;
 
-  const filtered = (medicines ?? []).filter(
+  const supplierName = (id: bigint) =>
+    suppliers?.find((s) => s.id === id)?.name ??
+    STATIC_SUPPLIER_MAP[String(Number(id))] ??
+    `#${id}`;
+
+  const filtered = displayMedicines.filter(
     (m) =>
       m.name.toLowerCase().includes(search.toLowerCase()) ||
       m.category.toLowerCase().includes(search.toLowerCase()),
@@ -182,18 +463,18 @@ export function Inventory() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-800 text-black tracking-tight flex items-center gap-2">
-            <Pill className="w-6 h-6 text-blue-600" />
+            <Pill className="w-6 h-6 text-black" />
             Medicine Inventory
           </h1>
           <p className="text-sm text-slate-500 mt-0.5 font-medium">
-            {medicines?.length ?? 0} medicines registered
+            {displayMedicines.length} medicines registered
           </p>
         </div>
         {isAdmin && (
           <Button
             onClick={openAdd}
             data-ocid="inventory.add_button"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-700 text-[13px] gap-2"
+            className="bg-black hover:bg-zinc-800 text-white font-700 text-[13px] gap-2"
           >
             <Plus className="w-4 h-4" />
             Add Medicine
@@ -311,7 +592,7 @@ export function Inventory() {
                           type="button"
                           onClick={() => openEdit(m)}
                           data-ocid={`inventory.edit_button.${idx + 1}`}
-                          className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-700 transition-colors"
                           title="Edit"
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -516,7 +797,7 @@ export function Inventory() {
                 type="submit"
                 disabled={isPending}
                 data-ocid="inventory.medicine.submit_button"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-700 gap-2"
+                className="bg-black hover:bg-zinc-800 text-white font-700 gap-2"
               >
                 {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                 {editTarget ? "Update Medicine" : "Add Medicine"}

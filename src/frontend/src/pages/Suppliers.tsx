@@ -40,6 +40,22 @@ import { useState } from "react";
 import { toast } from "sonner";
 import type { Supplier } from "../backend.d";
 
+// ── Static fallback: always shown when backend returns empty ──
+const STATIC_SUPPLIERS = [
+  { id: 1n, name: "Ibn Sina", contact: "+20-2-2345-6789 | ibnsina@pharma.eg" },
+  {
+    id: 2n,
+    name: "Pharma Overseas",
+    contact: "+44-20-7946-0958 | overseas@pharmaint.co.uk",
+  },
+  {
+    id: 3n,
+    name: "United Pharma",
+    contact: "+20-2-3456-7890 | info@unitedpharma.eg",
+  },
+  { id: 4n, name: "Al-Ezaby", contact: "+20-2-4567-8901 | supply@alezaby.com" },
+];
+
 type SupplierForm = { name: string; contact: string };
 const EMPTY_FORM: SupplierForm = { name: "", contact: "" };
 
@@ -102,6 +118,10 @@ export function Suppliers() {
     }
   }
 
+  // Use backend data if available, else static fallback
+  const displaySuppliers =
+    suppliers && suppliers.length > 0 ? suppliers : STATIC_SUPPLIERS;
+
   const isPending = addSupplier.isPending || updateSupplier.isPending;
 
   return (
@@ -110,18 +130,18 @@ export function Suppliers() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-800 text-black tracking-tight flex items-center gap-2">
-            <Truck className="w-6 h-6 text-blue-600" />
+            <Truck className="w-6 h-6 text-black" />
             Supplier Management
           </h1>
           <p className="text-sm text-slate-500 mt-0.5 font-medium">
-            {suppliers?.length ?? 0} active suppliers
+            {displaySuppliers.length} active suppliers
           </p>
         </div>
         {isAdmin && (
           <Button
             onClick={openAdd}
             data-ocid="suppliers.add_button"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-700 text-[13px] gap-2"
+            className="bg-black hover:bg-zinc-800 text-white font-700 text-[13px] gap-2"
           >
             <Plus className="w-4 h-4" />
             Add Supplier
@@ -157,7 +177,7 @@ export function Suppliers() {
                   )}
                 </TableRow>
               ))
-            ) : (suppliers ?? []).length === 0 ? (
+            ) : displaySuppliers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-10">
                   <div
@@ -169,7 +189,7 @@ export function Suppliers() {
                 </TableCell>
               </TableRow>
             ) : (
-              (suppliers ?? []).map((s, idx) => (
+              displaySuppliers.map((s, idx) => (
                 <TableRow
                   key={s.id.toString()}
                   className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
@@ -190,7 +210,7 @@ export function Suppliers() {
                           type="button"
                           onClick={() => openEdit(s)}
                           data-ocid={`suppliers.edit_button.${idx + 1}`}
-                          className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-700 transition-colors"
                           title="Edit"
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -278,7 +298,7 @@ export function Suppliers() {
                 type="submit"
                 disabled={isPending}
                 data-ocid="suppliers.submit_button"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-700 gap-2"
+                className="bg-black hover:bg-zinc-800 text-white font-700 gap-2"
               >
                 {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                 {editTarget ? "Update Supplier" : "Add Supplier"}

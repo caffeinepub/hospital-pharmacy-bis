@@ -22,7 +22,7 @@ function InitScreen({ status }: { status: "loading" | "error" | "done" }) {
   return (
     <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
       <div className="flex flex-col items-center gap-4 max-w-sm text-center px-4">
-        <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg">
+        <div className="w-16 h-16 rounded-2xl bg-black flex items-center justify-center shadow-lg">
           <span className="text-white text-2xl font-800 font-display">Rx</span>
         </div>
         <h1 className="text-xl font-display font-800 text-black">
@@ -30,7 +30,7 @@ function InitScreen({ status }: { status: "loading" | "error" | "done" }) {
         </h1>
         {status === "loading" ? (
           <>
-            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            <Loader2 className="w-8 h-8 text-black animate-spin" />
             <p className="text-[13px] font-600 text-slate-500">
               Initializing Hospital Pharmacy System…
             </p>

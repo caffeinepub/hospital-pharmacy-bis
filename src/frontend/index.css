@@ -23,63 +23,59 @@
   :root {
     --radius: 0.5rem;
 
-    /* Hospital Pharmacy Light Theme — Clean white with navy/blue accents */
-    --background: 0.99 0 0;
-    --foreground: 0.12 0.01 250;
+    /* Hospital Pharmacy — Pure Black & White System */
+    --background: 1 0 0;
+    --foreground: 0 0 0;
 
     --card: 1 0 0;
-    --card-foreground: 0.12 0.01 250;
+    --card-foreground: 0 0 0;
 
     --popover: 1 0 0;
-    --popover-foreground: 0.12 0.01 250;
+    --popover-foreground: 0 0 0;
 
-    /* Primary: Medical Blue */
-    --primary: 0.42 0.18 255;
+    /* Primary: Pure Black */
+    --primary: 0 0 0;
     --primary-foreground: 1 0 0;
 
-    --secondary: 0.96 0.005 240;
-    --secondary-foreground: 0.25 0.02 250;
+    --secondary: 0.96 0 0;
+    --secondary-foreground: 0.15 0 0;
 
-    --muted: 0.97 0.005 240;
-    --muted-foreground: 0.48 0.02 250;
+    --muted: 0.97 0 0;
+    --muted-foreground: 0.45 0 0;
 
-    --accent: 0.94 0.01 250;
-    --accent-foreground: 0.25 0.02 250;
+    --accent: 0.94 0 0;
+    --accent-foreground: 0.15 0 0;
 
-    /* Destructive: Alert red */
+    /* Destructive: Alert red — only exception */
     --destructive: 0.55 0.22 25;
     --destructive-foreground: 1 0 0;
 
-    --border: 0.88 0.01 240;
-    --input: 0.88 0.01 240;
-    --ring: 0.42 0.18 255;
+    --border: 0.90 0 0;
+    --input: 0.90 0 0;
+    --ring: 0 0 0;
 
-    /* Chart colors */
-    --chart-1: 0.42 0.18 255;
-    --chart-2: 0.60 0.18 165;
-    --chart-3: 0.65 0.16 35;
-    --chart-4: 0.55 0.20 300;
-    --chart-5: 0.45 0.22 25;
+    /* Chart colors — black/grey scale */
+    --chart-1: 0 0 0;
+    --chart-2: 0.35 0 0;
+    --chart-3: 0.55 0 0;
+    --chart-4: 0.70 0 0;
+    --chart-5: 0.55 0.22 25;
 
-    /* Sidebar */
-    --sidebar: 1 0 0;
-    --sidebar-foreground: 0.15 0.01 250;
-    --sidebar-primary: 0.42 0.18 255;
-    --sidebar-primary-foreground: 1 0 0;
-    --sidebar-accent: 0.94 0.01 250;
-    --sidebar-accent-foreground: 0.25 0.02 250;
-    --sidebar-border: 0.88 0.01 240;
-    --sidebar-ring: 0.42 0.18 255;
+    /* Sidebar — solid black */
+    --sidebar: 0 0 0;
+    --sidebar-foreground: 1 0 0;
+    --sidebar-primary: 1 0 0;
+    --sidebar-primary-foreground: 0 0 0;
+    --sidebar-accent: 0.15 0 0;
+    --sidebar-accent-foreground: 1 0 0;
+    --sidebar-border: 0.20 0 0;
+    --sidebar-ring: 1 0 0;
 
-    /* Pharma custom tokens */
-    --pharma-blue: #2563eb;
-    --pharma-blue-light: #eff6ff;
+    /* Pharma custom tokens — black/white only */
+    --pharma-black: #000000;
+    --pharma-white: #ffffff;
     --pharma-red: #dc2626;
     --pharma-red-light: #fef2f2;
-    --pharma-green: #16a34a;
-    --pharma-green-light: #f0fdf4;
-    --pharma-orange: #ea580c;
-    --pharma-orange-light: #fff7ed;
     --pharma-text: #000000;
     --pharma-border: #e2e8f0;
     --pharma-surface: #f8fafc;
@@ -154,4 +150,75 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* ── Print / PDF styles ─────────────────────────────────────── */
+@media print {
+  /* Hide sidebar, nav buttons, and non-essential UI */
+  nav,
+  aside,
+  [data-ocid="dashboard.generate_report.button"],
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ensure white background and black text throughout */
+  body,
+  main,
+  .bg-white {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Make full-width layout for print */
+  .flex {
+    display: block !important;
+  }
+
+  /* Stack grid columns for readability */
+  .grid {
+    display: grid !important;
+  }
+
+  .xl\:grid-cols-2,
+  .grid-cols-2 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .lg\:grid-cols-4,
+  .xl\:grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+
+  .xl\:grid-cols-3,
+  .md\:grid-cols-2 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Avoid page breaks inside cards */
+  .space-y-6 > *,
+  [data-ocid*=".card"],
+  [class*="rounded-xl"] {
+    break-inside: avoid;
+  }
+
+  /* Chart containers full width */
+  .recharts-responsive-container {
+    width: 100% !important;
+  }
+
+  /* Cards: remove shadows for print */
+  [class*="shadow"] {
+    box-shadow: none !important;
+  }
+
+  /* Borders visible for print */
+  [class*="border"] {
+    border-color: #e2e8f0 !important;
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
 }

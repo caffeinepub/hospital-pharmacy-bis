@@ -1,56 +1,42 @@
-# Hospital Pharmacy Management System (BIS Analytics)
+# Hospital Pharmacy BIS — Final Production Build
 
 ## Current State
-New project. No existing code.
+- Backend `initializeData()` is admin-only, so data is never seeded for unauthenticated users
+- Backend seeds generic placeholder names ("Medicine 1", "Supplier 1") and wrong dates ("2024-06-01")
+- `getCategoryDemand()` does not parse month from `saleDate`; all sales go to `jan` bucket regardless
+- `getMonthlySalesTrend()` groups by full saleDate string, not by month label
+- Frontend tables (Inventory, Sales, Suppliers) show empty state because backend returns empty arrays
+- Dashboard charts use static fallback data but tables are blank
+- No static fallback data exists in the table pages themselves
 
 ## Requested Changes (Diff)
 
 ### Add
-- Full Hospital Pharmacy Management System with Clean Architecture
-- Pre-seeded medicines inventory (20+ medicines across 4 categories)
-- Pre-seeded suppliers (Ibn Sina, Pharma Overseas, United Pharma, Al-Ezaby)
-- 50 historical sales records from Jan–Mar 2026 for analytics
-- Admin user: ferialsameh599@gmail.com set as Primary Admin
-- Analytics dashboard with Bar Charts (sales trends) and Line Charts (demand forecasting)
-- Near Expiry red alert for Augmentin 1g and ConCor 5mg
-- Inventory CRUD (Add/Edit/Delete medicines) — stable, no page refresh
-- Sales management (record new sales, view history)
-- Supplier management CRUD
-- Authorization-gated admin panel
+- Backend: `initializeData()` is now a **public** function (no auth gate) that self-seeds on first call using an `initialized` flag
+- Backend: Real 24-medicine inventory with correct names, categories, dosages, prices, supplier IDs
+- Backend: 4 real suppliers: Ibn Sina, Pharma Overseas, United Pharma, Al-Ezaby
+- Backend: 50 real sales records spread across Jan 2026, Feb 2026, and Mar 2026 with realistic dates
+- Backend: Augmentin 1g and ConCor 5mg flagged `isNearExpiry = true` with expiry dates within 30 days of today
+- Backend: Fix `getCategoryDemand()` to parse month from `saleDate` (format "YYYY-MM-DD") correctly for jan/feb/mar buckets
+- Backend: Fix `getMonthlySalesTrend()` to extract "Jan 2026"/"Feb 2026"/"Mar 2026" month labels from saleDate
+- Frontend: Static hardcoded fallback arrays in Inventory, Sales, and Suppliers pages that render IMMEDIATELY before the backend query resolves — ensuring tables are NEVER empty on load
+- Frontend: Merge logic: show static data if backend returns 0 items, otherwise show backend data
 
 ### Modify
-N/A
+- Backend: `initializeData()` — remove admin auth requirement, add idempotency guard (`initialized` flag)
+- Frontend: `Inventory.tsx` — add `STATIC_MEDICINES` array of 24 items; display them when `medicines` is empty/loading
+- Frontend: `Sales.tsx` — add `STATIC_SALES` array of 50 items; display them when `sales` is empty/loading
+- Frontend: `Suppliers.tsx` — add `STATIC_SUPPLIERS` array of 4 items; display them when `suppliers` is empty/loading
+- Frontend: `App.tsx` — call `initializeData()` without requiring admin (will succeed for any caller now)
 
 ### Remove
-N/A
+- Backend: Admin-only guard on `initializeData()`
+- Backend: Placeholder data ("Medicine N", "Category A/B/C", "Supplier N")
 
 ## Implementation Plan
-
-### Backend (Motoko)
-1. Medicine entity: id, name, category, dosage, quantity, supplierId, expiryDate, unitPrice, isNearExpiry flag
-2. Supplier entity: id, name, contact
-3. Sale entity: id, medicineId, medicineName, quantity, totalPrice, saleDate, patientName
-4. Functions:
-   - getMedicines, addMedicine, updateMedicine, deleteMedicine
-   - getSuppliers, addSupplier, updateSupplier, deleteSupplier
-   - getSales, recordSale
-   - getAnalyticsSummary (monthly totals, top medicines)
-   - getNearExpiryAlerts
-   - initializeData (seeds all pre-filled data on first run)
-5. Stable var storage so data persists across upgrades
-
-### Frontend (React + TypeScript)
-1. Layout: Sidebar nav with pages: Dashboard/Analytics, Inventory, Sales, Suppliers, Alerts
-2. Dashboard/Analytics page:
-   - KPI cards (total medicines, total sales, revenue)
-   - Interactive Bar Chart: monthly sales volume Jan–Mar 2026
-   - Line Chart: demand forecasting trend per medicine category
-   - All chart labels, legends, tick text in pure black (#000000) bold
-3. Inventory page: Table of all medicines, Add/Edit/Delete modals (no page refresh)
-4. Sales page: Record new sale form + sales history table
-5. Suppliers page: Supplier list with CRUD modals
-6. Alerts page: Red-highlighted near-expiry alerts for Augmentin 1g and ConCor 5mg
-7. Light mode only (white background throughout)
-8. All table text, labels pure black and bold
-9. Authorization: admin-only access to CRUD operations
-10. Charts library: Recharts (already available in project)
+1. Rewrite `main.mo`: fix `initializeData` to be public with idempotency flag, inject all 24 real medicines, 4 real suppliers, 50 realistic sales records (Jan–Mar 2026), fix analytics aggregation functions
+2. Rewrite `Inventory.tsx`: add 24-medicine static fallback array; use it when backend returns empty
+3. Rewrite `Sales.tsx`: add 50-sale static fallback array; use it when backend returns empty; show total revenue from static data
+4. Rewrite `Suppliers.tsx`: add 4-supplier static fallback; use it when backend returns empty
+5. Keep `Dashboard.tsx` static fallback as-is (already working)
+6. Validate and deploy
