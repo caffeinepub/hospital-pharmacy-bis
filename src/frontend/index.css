@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Font: Plus Jakarta Sans for body, Bricolage Grotesque for headings */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/assets/fonts/PlusJakartaSans[wght].woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/assets/fonts/BricolageGrotesque[opsz,wdth,wght].woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+
+    /* Hospital Pharmacy Light Theme — Clean white with navy/blue accents */
+    --background: 0.99 0 0;
+    --foreground: 0.12 0.01 250;
+
+    --card: 1 0 0;
+    --card-foreground: 0.12 0.01 250;
+
+    --popover: 1 0 0;
+    --popover-foreground: 0.12 0.01 250;
+
+    /* Primary: Medical Blue */
+    --primary: 0.42 0.18 255;
+    --primary-foreground: 1 0 0;
+
+    --secondary: 0.96 0.005 240;
+    --secondary-foreground: 0.25 0.02 250;
+
+    --muted: 0.97 0.005 240;
+    --muted-foreground: 0.48 0.02 250;
+
+    --accent: 0.94 0.01 250;
+    --accent-foreground: 0.25 0.02 250;
+
+    /* Destructive: Alert red */
+    --destructive: 0.55 0.22 25;
+    --destructive-foreground: 1 0 0;
+
+    --border: 0.88 0.01 240;
+    --input: 0.88 0.01 240;
+    --ring: 0.42 0.18 255;
+
+    /* Chart colors */
+    --chart-1: 0.42 0.18 255;
+    --chart-2: 0.60 0.18 165;
+    --chart-3: 0.65 0.16 35;
+    --chart-4: 0.55 0.20 300;
+    --chart-5: 0.45 0.22 25;
+
+    /* Sidebar */
+    --sidebar: 1 0 0;
+    --sidebar-foreground: 0.15 0.01 250;
+    --sidebar-primary: 0.42 0.18 255;
+    --sidebar-primary-foreground: 1 0 0;
+    --sidebar-accent: 0.94 0.01 250;
+    --sidebar-accent-foreground: 0.25 0.02 250;
+    --sidebar-border: 0.88 0.01 240;
+    --sidebar-ring: 0.42 0.18 255;
+
+    /* Pharma custom tokens */
+    --pharma-blue: #2563eb;
+    --pharma-blue-light: #eff6ff;
+    --pharma-red: #dc2626;
+    --pharma-red-light: #fef2f2;
+    --pharma-green: #16a34a;
+    --pharma-green-light: #f0fdf4;
+    --pharma-orange: #ea580c;
+    --pharma-orange-light: #fff7ed;
+    --pharma-text: #000000;
+    --pharma-border: #e2e8f0;
+    --pharma-surface: #f8fafc;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Bricolage Grotesque", "Plus Jakarta Sans", system-ui, sans-serif;
+    font-weight: 700;
+    color: #000000;
+  }
+}
+
+/* Pharmacy-specific utility classes */
+.pharma-table-header {
+  color: #000000 !important;
+  font-weight: 700 !important;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background-color: #f8fafc;
+}
+
+.pharma-table-cell {
+  color: #000000 !important;
+  font-weight: 600 !important;
+}
+
+.pharma-chart-text {
+  fill: #000000 !important;
+  font-weight: 700 !important;
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif !important;
+}
+
+/* Recharts overrides for black text */
+.recharts-cartesian-axis-tick text,
+.recharts-legend-item-text,
+.recharts-label {
+  fill: #000000 !important;
+  font-weight: 700 !important;
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
