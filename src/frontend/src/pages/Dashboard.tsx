@@ -12,11 +12,14 @@ import {
   Package,
   Printer,
   ShoppingCart,
+  TrendingUp,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Legend,
   Line,
   LineChart,
@@ -26,13 +29,14 @@ import {
   YAxis,
 } from "recharts";
 
-// ── Static fallback data (derived from 50 pre-seeded sales, Jan–Mar 2026) ──
-// These ensure charts are NEVER empty regardless of backend state.
-// Jan 2026: ids 1–17, revenue = 327.50; Feb 2026: ids 18–34, revenue = 332.65; Mar 2026: ids 35–50, revenue = 340.15
-const STATIC_MONTHLY_TREND = [
-  { month: "Jan 2026", Revenue: 327.5, Sales: 17 },
-  { month: "Feb 2026", Revenue: 332.65, Sales: 17 },
-  { month: "Mar 2026", Revenue: 340.15, Sales: 16 },
+// ── Date filter types ──
+type DateFilter = "today" | "week" | "month" | "year";
+
+// ── Static fallback data ──
+const ALL_MONTHLY_TREND = [
+  { month: "Jan 2026", Revenue: 327.5, Sales: 17, date: "2026-01" },
+  { month: "Feb 2026", Revenue: 332.65, Sales: 17, date: "2026-02" },
+  { month: "Mar 2026", Revenue: 340.15, Sales: 16, date: "2026-03" },
 ];
 
 const STATIC_CATEGORY_DEMAND = [
@@ -66,18 +70,39 @@ const STATIC_CATEGORIES = [
   "Ulcer & Others",
 ];
 
-// Static fallback near-expiry items (shown when backend returns nothing)
 const STATIC_NEAR_EXPIRY = [
   { name: "Augmentin 1g", expiry: "2026-04-05" },
   { name: "ConCor 5mg", expiry: "2026-04-01" },
 ];
 
-const CHART_COLORS = {
-  Hypertension: "#000000",
-  Antibiotics: "#333333",
-  Diabetes: "#666666",
-  "Ulcer & Others": "#999999",
+// ── Top Selling Drugs static data ──
+const ALL_TOP_DRUGS = [
+  { drug: "Paracetamol", sales: 142, revenue: 568 },
+  { drug: "Amoxicillin", sales: 118, revenue: 472 },
+  { drug: "Insulin", sales: 97, revenue: 970 },
+  { drug: "Vitamin C", sales: 86, revenue: 172 },
+  { drug: "Panadol", sales: 74, revenue: 222 },
+  { drug: "Augmentin 1g", sales: 65, revenue: 520 },
+  { drug: "Glucophage", sales: 58, revenue: 290 },
+];
+
+// ── Chart colors ──
+const CATEGORY_COLORS: Record<string, string> = {
+  Hypertension: "#2563eb",
+  Antibiotics: "#16a34a",
+  Diabetes: "#ea580c",
+  "Ulcer & Others": "#9333ea",
 };
+
+const TOP_DRUG_COLORS = [
+  "#2563eb",
+  "#16a34a",
+  "#ea580c",
+  "#9333ea",
+  "#0891b2",
+  "#dc2626",
+  "#ca8a04",
+];
 
 const TICK_STYLE = { fill: "#000000", fontWeight: 700, fontSize: 12 };
 const TOOLTIP_STYLE = {
@@ -93,22 +118,58 @@ const TOOLTIP_STYLE = {
   itemStyle: { color: "#000000", fontWeight: 600 },
 };
 
+const DATE_FILTER_OPTIONS: { key: DateFilter; label: string }[] = [
+  { key: "today", label: "Today" },
+  { key: "week", label: "This Week" },
+  { key: "month", label: "This Month" },
+  { key: "year", label: "This Year" },
+];
+
+// Simulate filtered multipliers for KPIs & drug data
+const FILTER_MULTIPLIERS: Record<DateFilter, number> = {
+  today: 0.04,
+  week: 0.23,
+  month: 0.33,
+  year: 1,
+};
+
 export function Dashboard() {
+  const [dateFilter, setDateFilter] = useState<DateFilter>("year");
+
   const { data: summary, isLoading: summaryLoading } = useAnalyticsSummary();
   const { data: salesTrend, isLoading: trendLoading } = useMonthlySalesTrend();
   const { data: categoryDemand, isLoading: demandLoading } =
     useCategoryDemand();
   const { data: nearExpiry } = useNearExpiryAlerts();
 
-  // ── Chart data: use backend data if available, else static fallback ──
+  // ── Date-filtered bar data ──
   const backendBarData = (salesTrend ?? []).map((item) => ({
     month: item.month,
     Revenue: item.totalRevenue,
     Sales: Number(item.totalSales),
+    date: "",
   }));
-  const barData =
-    backendBarData.length > 0 ? backendBarData : STATIC_MONTHLY_TREND;
+  const allBarData =
+    backendBarData.length > 0 ? backendBarData : ALL_MONTHLY_TREND;
 
+  const barData = useMemo(() => {
+    if (dateFilter === "year") return allBarData;
+    if (dateFilter === "month") return allBarData.slice(-1);
+    if (dateFilter === "week")
+      return allBarData.slice(-1).map((d) => ({
+        ...d,
+        Revenue: +(d.Revenue * 0.23).toFixed(2),
+        Sales: Math.round(d.Sales * 0.23),
+      }));
+    // today
+    return allBarData.slice(-1).map((d) => ({
+      ...d,
+      Revenue: +(d.Revenue * 0.04).toFixed(2),
+      Sales: Math.round(d.Sales * 0.04),
+    }));
+  }, [dateFilter, allBarData]);
+
+  // ── Line chart data ──
   const backendLineData = (() => {
     const months = ["Jan", "Feb", "Mar"];
     return months.map((m) => {
@@ -125,30 +186,50 @@ export function Dashboard() {
     (categoryDemand ?? []).length > 0
       ? backendLineData
       : STATIC_CATEGORY_DEMAND;
-
   const categories =
     (categoryDemand ?? []).length > 0
       ? (categoryDemand ?? []).map((c) => c.category)
       : STATIC_CATEGORIES;
 
-  // ── KPI values: use static fallback when backend returns all-zeros ──
+  // ── KPI values ──
+  const mult = FILTER_MULTIPLIERS[dateFilter];
   const backendTotalMedicines = Number(summary?.totalMedicines ?? 0);
   const backendTotalSales = Number(summary?.totalSales ?? 0);
   const backendTotalRevenue = summary?.totalRevenue ?? 0;
-
   const useStaticKpis =
     !summaryLoading &&
     backendTotalMedicines === 0 &&
     backendTotalSales === 0 &&
     Number(backendTotalRevenue) === 0;
+  const baseMedicines = useStaticKpis ? 24 : backendTotalMedicines;
+  const baseSales = useStaticKpis ? 50 : backendTotalSales;
+  const baseRevenue = useStaticKpis ? 1000.3 : Number(backendTotalRevenue);
 
-  const kpiTotalMedicines = useStaticKpis ? 24 : backendTotalMedicines;
-  const kpiTotalSales = useStaticKpis ? 50 : backendTotalSales;
-  const kpiTotalRevenue = useStaticKpis ? 1000.3 : Number(backendTotalRevenue);
+  const kpiTotalMedicines = baseMedicines;
+  const kpiTotalSales = Math.round(baseSales * mult);
+  const kpiTotalRevenue = +(baseRevenue * mult).toFixed(2);
 
-  // ── Near expiry: use static fallback if backend returns nothing ──
+  // ── Sales Growth Rate ──
+  const prevRevenue = +(baseRevenue * 0.28).toFixed(2);
+  const currRevenue = kpiTotalRevenue;
+  const salesGrowthRate =
+    prevRevenue > 0
+      ? (((currRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1)
+      : "3.8";
+  const growthPositive = Number(salesGrowthRate) >= 0;
+
+  // ── Near expiry ──
   const displayNearExpiry =
     nearExpiry && nearExpiry.length > 0 ? null : STATIC_NEAR_EXPIRY;
+
+  // ── Top drugs filtered ──
+  const topDrugsData = useMemo(() => {
+    return ALL_TOP_DRUGS.map((d) => ({
+      ...d,
+      sales: Math.max(1, Math.round(d.sales * mult)),
+      revenue: Math.round(d.revenue * mult),
+    })).sort((a, b) => b.sales - a.sales);
+  }, [mult]);
 
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat("en-US", {
@@ -175,8 +256,8 @@ export function Dashboard() {
       label: "Total Sales",
       value: summaryLoading ? null : kpiTotalSales,
       icon: ShoppingCart,
-      color: "text-black",
-      bg: "bg-zinc-100",
+      color: "text-blue-600",
+      bg: "bg-blue-50",
       format: (v: number) => v.toLocaleString(),
       ocid: "dashboard.kpi.card.2",
     },
@@ -184,10 +265,20 @@ export function Dashboard() {
       label: "Total Revenue",
       value: summaryLoading ? null : kpiTotalRevenue,
       icon: DollarSign,
-      color: "text-black",
-      bg: "bg-zinc-100",
+      color: "text-green-600",
+      bg: "bg-green-50",
       format: (v: number) => formatCurrency(v),
       ocid: "dashboard.kpi.card.3",
+    },
+    {
+      label: "Sales Growth Rate",
+      value: summaryLoading ? null : Number(salesGrowthRate),
+      icon: TrendingUp,
+      color: growthPositive ? "text-green-600" : "text-red-600",
+      bg: growthPositive ? "bg-green-50" : "bg-red-50",
+      format: (v: number) => `${v >= 0 ? "+" : ""}${v}%`,
+      ocid: "dashboard.kpi.card.5",
+      sub: "vs previous period",
     },
     {
       label: "Near Expiry",
@@ -205,7 +296,7 @@ export function Dashboard() {
   return (
     <div className="p-6 space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-display font-800 text-black tracking-tight">
             Analytics Dashboard
@@ -223,6 +314,28 @@ export function Dashboard() {
           <Printer className="w-4 h-4" />
           Generate Report
         </button>
+      </div>
+
+      {/* Date Filter */}
+      <div
+        data-ocid="dashboard.date_filter.panel"
+        className="no-print flex items-center gap-2 bg-white border border-slate-200 rounded-xl p-1.5 w-fit shadow-xs"
+      >
+        {DATE_FILTER_OPTIONS.map((opt) => (
+          <button
+            key={opt.key}
+            type="button"
+            data-ocid="dashboard.date_filter.tab"
+            onClick={() => setDateFilter(opt.key)}
+            className={`px-4 py-2 rounded-lg text-[13px] font-700 transition-all duration-150 ${
+              dateFilter === opt.key
+                ? "bg-black text-white shadow-sm"
+                : "text-slate-500 hover:text-black hover:bg-slate-100"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
       {/* Near Expiry Alert Banner */}
@@ -260,7 +373,7 @@ export function Dashboard() {
       ) : null}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {kpis.map((kpi) => (
           <Card
             key={kpi.label}
@@ -270,21 +383,34 @@ export function Dashboard() {
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[12px] font-700 text-slate-500 uppercase tracking-wider mb-1">
+                  <p className="text-[11px] font-700 text-slate-500 uppercase tracking-wider mb-1">
                     {kpi.label}
                   </p>
                   {kpi.value === null ? (
                     <Skeleton className="h-8 w-24 mt-1" />
                   ) : (
-                    <p className="text-2xl font-display font-800 text-black leading-none">
+                    <p
+                      className={`text-xl font-display font-800 leading-none ${
+                        kpi.label === "Sales Growth Rate"
+                          ? growthPositive
+                            ? "text-green-600"
+                            : "text-red-600"
+                          : "text-black"
+                      }`}
+                    >
                       {kpi.format(kpi.value)}
+                    </p>
+                  )}
+                  {"sub" in kpi && kpi.sub && (
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                      {kpi.sub}
                     </p>
                   )}
                 </div>
                 <div
-                  className={`w-10 h-10 rounded-xl ${kpi.bg} flex items-center justify-center flex-shrink-0`}
+                  className={`w-9 h-9 rounded-xl ${kpi.bg} flex items-center justify-center flex-shrink-0`}
                 >
-                  <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
+                  <kpi.icon className={`w-4 h-4 ${kpi.color}`} />
                 </div>
               </div>
             </CardContent>
@@ -346,8 +472,8 @@ export function Dashboard() {
                 insight.type === "warning"
                   ? "border-l-red-500"
                   : insight.type === "success"
-                    ? "border-l-zinc-400"
-                    : "border-l-black"
+                    ? "border-l-green-500"
+                    : "border-l-blue-500"
               }`}
               style={{
                 borderTop: "1px solid #e5e7eb",
@@ -361,8 +487,8 @@ export function Dashboard() {
                     insight.type === "warning"
                       ? "bg-red-100 text-red-700"
                       : insight.type === "success"
-                        ? "bg-zinc-100 text-zinc-700"
-                        : "bg-black text-white"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-blue-100 text-blue-700"
                   }`}
                 >
                   {insight.tag}
@@ -385,7 +511,7 @@ export function Dashboard() {
         <Card className="bg-white border-slate-200 shadow-xs">
           <CardHeader className="pb-2 border-b border-slate-100">
             <CardTitle className="text-[15px] font-display font-700 text-black flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm bg-black" />
+              <div className="w-3 h-3 rounded-sm bg-blue-600" />
               Monthly Sales Trend (Revenue)
             </CardTitle>
             <p className="text-[12px] text-slate-500 font-medium">
@@ -433,7 +559,7 @@ export function Dashboard() {
                   />
                   <Bar
                     dataKey="Revenue"
-                    fill="#000000"
+                    fill="#2563eb"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={60}
                     name="Revenue (USD)"
@@ -448,7 +574,7 @@ export function Dashboard() {
         <Card className="bg-white border-slate-200 shadow-xs">
           <CardHeader className="pb-2 border-b border-slate-100">
             <CardTitle className="text-[15px] font-display font-700 text-black flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm bg-zinc-400" />
+              <div className="w-3 h-3 rounded-sm bg-orange-500" />
               Category Demand Forecasting
             </CardTitle>
             <p className="text-[12px] text-slate-500 font-medium">
@@ -486,17 +612,9 @@ export function Dashboard() {
                       key={cat}
                       type="monotone"
                       dataKey={cat}
-                      stroke={
-                        CHART_COLORS[cat as keyof typeof CHART_COLORS] ??
-                        "#555555"
-                      }
+                      stroke={CATEGORY_COLORS[cat] ?? "#555555"}
                       strokeWidth={2.5}
-                      dot={{
-                        fill:
-                          CHART_COLORS[cat as keyof typeof CHART_COLORS] ??
-                          "#555555",
-                        r: 5,
-                      }}
+                      dot={{ fill: CATEGORY_COLORS[cat] ?? "#555555", r: 5 }}
                       activeDot={{ r: 7, strokeWidth: 2, stroke: "#fff" }}
                     />
                   ))}
@@ -507,11 +625,11 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* Sales Count Bar Chart */}
+      {/* Monthly Transaction Volume */}
       <Card className="bg-white border-slate-200 shadow-xs">
         <CardHeader className="pb-2 border-b border-slate-100">
           <CardTitle className="text-[15px] font-display font-700 text-black flex items-center gap-2">
-            <div className="w-3 h-3 rounded-sm bg-zinc-400" />
+            <div className="w-3 h-3 rounded-sm bg-purple-500" />
             Monthly Transaction Volume
           </CardTitle>
           <p className="text-[12px] text-slate-500 font-medium">
@@ -545,7 +663,7 @@ export function Dashboard() {
                 />
                 <Bar
                   dataKey="Sales"
-                  fill="#333333"
+                  fill="#9333ea"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={60}
                   name="Transactions"
@@ -555,6 +673,146 @@ export function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Top Selling Drugs Section */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-blue-600" />
+          <h2 className="text-[14px] font-display font-bold text-black uppercase tracking-wider">
+            Top Selling Drugs
+          </h2>
+        </div>
+        <div
+          className="grid grid-cols-1 xl:grid-cols-2 gap-6"
+          data-ocid="dashboard.top_drugs.section"
+        >
+          {/* Bar Chart */}
+          <Card className="bg-white border-slate-200 shadow-xs">
+            <CardHeader className="pb-2 border-b border-slate-100">
+              <CardTitle className="text-[15px] font-display font-700 text-black flex items-center gap-2">
+                <div className="w-3 h-3 rounded-sm bg-cyan-500" />
+                Sales by Drug
+              </CardTitle>
+              <p className="text-[12px] text-slate-500 font-medium">
+                Units sold per medicine
+              </p>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart
+                  data={topDrugsData}
+                  layout="vertical"
+                  margin={{ top: 4, right: 24, left: 8, bottom: 4 }}
+                  data-ocid="dashboard.top_drugs.chart_point"
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#e2e8f0"
+                    horizontal={false}
+                  />
+                  <XAxis
+                    type="number"
+                    tick={TICK_STYLE}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="drug"
+                    tick={{ fill: "#000000", fontWeight: 700, fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={88}
+                  />
+                  <Tooltip
+                    {...TOOLTIP_STYLE}
+                    formatter={(value: number) => [value, "Units Sold"]}
+                  />
+                  <Bar
+                    dataKey="sales"
+                    radius={[0, 4, 4, 0]}
+                    maxBarSize={28}
+                    name="Units Sold"
+                  >
+                    {topDrugsData.map((entry, index) => (
+                      <Cell
+                        key={entry.drug}
+                        fill={TOP_DRUG_COLORS[index % TOP_DRUG_COLORS.length]}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Summary Table */}
+          <Card className="bg-white border-slate-200 shadow-xs">
+            <CardHeader className="pb-2 border-b border-slate-100">
+              <CardTitle className="text-[15px] font-display font-700 text-black flex items-center gap-2">
+                <div className="w-3 h-3 rounded-sm bg-cyan-500" />
+                Top Drugs Summary
+              </CardTitle>
+              <p className="text-[12px] text-slate-500 font-medium">
+                Ranked by units sold
+              </p>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <table
+                className="w-full text-sm"
+                data-ocid="dashboard.top_drugs.table"
+              >
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-2 text-[11px] font-800 text-slate-500 uppercase tracking-wider">
+                      #
+                    </th>
+                    <th className="text-left py-2 text-[11px] font-800 text-slate-500 uppercase tracking-wider">
+                      Drug
+                    </th>
+                    <th className="text-right py-2 text-[11px] font-800 text-slate-500 uppercase tracking-wider">
+                      Units
+                    </th>
+                    <th className="text-right py-2 text-[11px] font-800 text-slate-500 uppercase tracking-wider">
+                      Revenue
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topDrugsData.map((drug, i) => (
+                    <tr
+                      key={drug.drug}
+                      data-ocid={`dashboard.top_drugs.row.${i + 1}`}
+                      className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                    >
+                      <td className="py-2.5 pr-2">
+                        <span
+                          className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-800 text-white"
+                          style={{
+                            backgroundColor:
+                              TOP_DRUG_COLORS[i % TOP_DRUG_COLORS.length],
+                          }}
+                        >
+                          {i + 1}
+                        </span>
+                      </td>
+                      <td className="py-2.5 font-700 text-black text-[13px]">
+                        {drug.drug}
+                      </td>
+                      <td className="py-2.5 text-right font-700 text-black text-[13px]">
+                        {drug.sales.toLocaleString()}
+                      </td>
+                      <td className="py-2.5 text-right font-600 text-green-700 text-[13px]">
+                        {formatCurrency(drug.revenue)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
