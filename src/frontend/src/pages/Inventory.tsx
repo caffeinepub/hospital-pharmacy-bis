@@ -39,7 +39,6 @@ import {
 import {
   useAddMedicine,
   useDeleteMedicine,
-  useIsAdmin,
   useMedicines,
   useSuppliers,
   useUpdateMedicine,
@@ -72,7 +71,8 @@ const STATIC_MEDICINES = [
     dosage: "2.5mg",
     quantity: 200n,
     supplierId: 1n,
-    unitPrice: 4.5,
+    purchasePrice: 3.15,
+    salePrice: 4.5,
     expiryDate: "2027-01-15",
     isNearExpiry: false,
   },
@@ -83,7 +83,8 @@ const STATIC_MEDICINES = [
     dosage: "5mg",
     quantity: 150n,
     supplierId: 1n,
-    unitPrice: 5.75,
+    purchasePrice: 4.03,
+    salePrice: 5.75,
     expiryDate: "2026-04-01",
     isNearExpiry: true,
   },
@@ -94,7 +95,8 @@ const STATIC_MEDICINES = [
     dosage: "10mg",
     quantity: 180n,
     supplierId: 1n,
-    unitPrice: 7.2,
+    purchasePrice: 5.04,
+    salePrice: 7.2,
     expiryDate: "2026-12-20",
     isNearExpiry: false,
   },
@@ -105,7 +107,8 @@ const STATIC_MEDICINES = [
     dosage: "20mg",
     quantity: 120n,
     supplierId: 2n,
-    unitPrice: 8.5,
+    purchasePrice: 5.95,
+    salePrice: 8.5,
     expiryDate: "2027-03-10",
     isNearExpiry: false,
   },
@@ -116,7 +119,8 @@ const STATIC_MEDICINES = [
     dosage: "40mg",
     quantity: 100n,
     supplierId: 2n,
-    unitPrice: 11.0,
+    purchasePrice: 7.7,
+    salePrice: 11.0,
     expiryDate: "2027-06-30",
     isNearExpiry: false,
   },
@@ -127,7 +131,8 @@ const STATIC_MEDICINES = [
     dosage: "1g",
     quantity: 90n,
     supplierId: 3n,
-    unitPrice: 15.5,
+    purchasePrice: 10.85,
+    salePrice: 15.5,
     expiryDate: "2026-04-05",
     isNearExpiry: true,
   },
@@ -138,7 +143,8 @@ const STATIC_MEDICINES = [
     dosage: "400mg",
     quantity: 110n,
     supplierId: 3n,
-    unitPrice: 12.0,
+    purchasePrice: 8.4,
+    salePrice: 12.0,
     expiryDate: "2027-02-28",
     isNearExpiry: false,
   },
@@ -149,7 +155,8 @@ const STATIC_MEDICINES = [
     dosage: "500mg",
     quantity: 80n,
     supplierId: 3n,
-    unitPrice: 18.0,
+    purchasePrice: 12.6,
+    salePrice: 18.0,
     expiryDate: "2026-11-15",
     isNearExpiry: false,
   },
@@ -160,7 +167,8 @@ const STATIC_MEDICINES = [
     dosage: "1g",
     quantity: 60n,
     supplierId: 3n,
-    unitPrice: 22.5,
+    purchasePrice: 15.75,
+    salePrice: 22.5,
     expiryDate: "2027-01-20",
     isNearExpiry: false,
   },
@@ -171,7 +179,8 @@ const STATIC_MEDICINES = [
     dosage: "500mg",
     quantity: 130n,
     supplierId: 4n,
-    unitPrice: 6.75,
+    purchasePrice: 4.73,
+    salePrice: 6.75,
     expiryDate: "2026-10-31",
     isNearExpiry: false,
   },
@@ -182,7 +191,8 @@ const STATIC_MEDICINES = [
     dosage: "1mg",
     quantity: 200n,
     supplierId: 2n,
-    unitPrice: 9.5,
+    purchasePrice: 6.65,
+    salePrice: 9.5,
     expiryDate: "2027-04-15",
     isNearExpiry: false,
   },
@@ -193,7 +203,8 @@ const STATIC_MEDICINES = [
     dosage: "2mg",
     quantity: 180n,
     supplierId: 2n,
-    unitPrice: 12.0,
+    purchasePrice: 8.4,
+    salePrice: 12.0,
     expiryDate: "2027-04-15",
     isNearExpiry: false,
   },
@@ -204,7 +215,8 @@ const STATIC_MEDICINES = [
     dosage: "500mg",
     quantity: 250n,
     supplierId: 4n,
-    unitPrice: 5.5,
+    purchasePrice: 3.85,
+    salePrice: 5.5,
     expiryDate: "2027-08-20",
     isNearExpiry: false,
   },
@@ -215,7 +227,8 @@ const STATIC_MEDICINES = [
     dosage: "1000mg",
     quantity: 220n,
     supplierId: 4n,
-    unitPrice: 8.0,
+    purchasePrice: 5.6,
+    salePrice: 8.0,
     expiryDate: "2027-08-20",
     isNearExpiry: false,
   },
@@ -226,7 +239,8 @@ const STATIC_MEDICINES = [
     dosage: "50/1000mg",
     quantity: 90n,
     supplierId: 2n,
-    unitPrice: 24.0,
+    purchasePrice: 16.8,
+    salePrice: 24.0,
     expiryDate: "2026-09-30",
     isNearExpiry: false,
   },
@@ -237,7 +251,8 @@ const STATIC_MEDICINES = [
     dosage: "40mg",
     quantity: 160n,
     supplierId: 1n,
-    unitPrice: 9.25,
+    purchasePrice: 6.48,
+    salePrice: 9.25,
     expiryDate: "2027-05-10",
     isNearExpiry: false,
   },
@@ -248,7 +263,8 @@ const STATIC_MEDICINES = [
     dosage: "40mg",
     quantity: 140n,
     supplierId: 2n,
-    unitPrice: 11.5,
+    purchasePrice: 8.05,
+    salePrice: 11.5,
     expiryDate: "2027-07-22",
     isNearExpiry: false,
   },
@@ -259,7 +275,8 @@ const STATIC_MEDICINES = [
     dosage: "20mg",
     quantity: 120n,
     supplierId: 3n,
-    unitPrice: 7.8,
+    purchasePrice: 5.46,
+    salePrice: 7.8,
     expiryDate: "2026-12-05",
     isNearExpiry: false,
   },
@@ -270,7 +287,8 @@ const STATIC_MEDICINES = [
     dosage: "20mg",
     quantity: 100n,
     supplierId: 4n,
-    unitPrice: 8.5,
+    purchasePrice: 5.95,
+    salePrice: 8.5,
     expiryDate: "2027-02-14",
     isNearExpiry: false,
   },
@@ -281,7 +299,8 @@ const STATIC_MEDICINES = [
     dosage: "10mg",
     quantity: 110n,
     supplierId: 1n,
-    unitPrice: 14.0,
+    purchasePrice: 9.8,
+    salePrice: 14.0,
     expiryDate: "2027-09-18",
     isNearExpiry: false,
   },
@@ -292,7 +311,8 @@ const STATIC_MEDICINES = [
     dosage: "100mg",
     quantity: 300n,
     supplierId: 4n,
-    unitPrice: 2.5,
+    purchasePrice: 1.75,
+    salePrice: 2.5,
     expiryDate: "2027-11-30",
     isNearExpiry: false,
   },
@@ -303,7 +323,8 @@ const STATIC_MEDICINES = [
     dosage: "5mg",
     quantity: 150n,
     supplierId: 2n,
-    unitPrice: 6.0,
+    purchasePrice: 4.2,
+    salePrice: 6.0,
     expiryDate: "2027-01-25",
     isNearExpiry: false,
   },
@@ -314,7 +335,8 @@ const STATIC_MEDICINES = [
     dosage: "850mg",
     quantity: 200n,
     supplierId: 3n,
-    unitPrice: 4.75,
+    purchasePrice: 3.33,
+    salePrice: 4.75,
     expiryDate: "2027-06-10",
     isNearExpiry: false,
   },
@@ -325,7 +347,8 @@ const STATIC_MEDICINES = [
     dosage: "20mg",
     quantity: 180n,
     supplierId: 4n,
-    unitPrice: 3.8,
+    purchasePrice: 2.66,
+    salePrice: 3.8,
     expiryDate: "2027-10-05",
     isNearExpiry: false,
   },
@@ -344,7 +367,8 @@ type FormData = {
   dosage: string;
   quantity: string;
   supplierId: string;
-  unitPrice: string;
+  purchasePrice: string;
+  salePrice: string;
   expiryDate: string;
   isNearExpiry: boolean;
 };
@@ -355,15 +379,23 @@ const EMPTY_FORM: FormData = {
   dosage: "",
   quantity: "",
   supplierId: "",
-  unitPrice: "",
+  purchasePrice: "",
+  salePrice: "",
   expiryDate: "",
   isNearExpiry: false,
 };
 
+function isNearExpiryDate(dateStr: string): boolean {
+  if (!dateStr) return false;
+  const expiry = new Date(dateStr);
+  const today = new Date();
+  const diff = (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+  return diff <= 30;
+}
+
 export function Inventory() {
   const { data: medicines, isLoading } = useMedicines();
   const { data: suppliers } = useSuppliers();
-  const { data: isAdmin } = useIsAdmin();
   const addMedicine = useAddMedicine();
   const updateMedicine = useUpdateMedicine();
   const deleteMedicine = useDeleteMedicine();
@@ -403,7 +435,8 @@ export function Inventory() {
       dosage: m.dosage,
       quantity: String(Number(m.quantity)),
       supplierId: String(Number(m.supplierId)),
-      unitPrice: String(m.unitPrice),
+      purchasePrice: String(m.purchasePrice),
+      salePrice: String(m.salePrice),
       expiryDate: m.expiryDate,
       isNearExpiry: m.isNearExpiry,
     });
@@ -418,15 +451,17 @@ export function Inventory() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const autoNearExpiry = isNearExpiryDate(form.expiryDate);
     const payload = {
       name: form.name.trim(),
       category: form.category,
       dosage: form.dosage.trim(),
       quantity: BigInt(Number.parseInt(form.quantity, 10) || 0),
       supplierId: BigInt(Number.parseInt(form.supplierId, 10) || 1),
-      unitPrice: Number.parseFloat(form.unitPrice) || 0,
+      purchasePrice: Number.parseFloat(form.purchasePrice) || 0,
+      salePrice: Number.parseFloat(form.salePrice) || 0,
       expiryDate: form.expiryDate,
-      isNearExpiry: form.isNearExpiry,
+      isNearExpiry: form.isNearExpiry || autoNearExpiry,
     };
 
     try {
@@ -439,7 +474,7 @@ export function Inventory() {
       }
       closeDialog();
     } catch {
-      toast.error("Operation failed. Please try again.");
+      toast.error("Login as admin to manage data");
     }
   }
 
@@ -449,7 +484,7 @@ export function Inventory() {
       await deleteMedicine.mutateAsync(deleteTarget.id);
       toast.success(`"${deleteTarget.name}" removed from inventory`);
     } catch {
-      toast.error("Delete failed. Please try again.");
+      toast.error("Login as admin to manage data");
     } finally {
       setDeleteTarget(null);
     }
@@ -470,16 +505,14 @@ export function Inventory() {
             {displayMedicines.length} medicines registered
           </p>
         </div>
-        {isAdmin && (
-          <Button
-            onClick={openAdd}
-            data-ocid="inventory.add_button"
-            className="bg-black hover:bg-zinc-800 text-white font-700 text-[13px] gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Medicine
-          </Button>
-        )}
+        <Button
+          onClick={openAdd}
+          data-ocid="inventory.add_button"
+          className="bg-black hover:bg-zinc-800 text-white font-700 text-[13px] gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Add Medicine
+        </Button>
       </div>
 
       {/* Search */}
@@ -488,109 +521,117 @@ export function Inventory() {
           placeholder="Search by name or category…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          data-ocid="inventory.search_input"
           className="border-slate-300 text-black font-medium text-[13px]"
         />
       </div>
 
       {/* Table */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
-        <Table data-ocid="inventory.table">
-          <TableHeader>
-            <TableRow className="bg-slate-50 border-b border-slate-200">
-              {[
-                "Name",
-                "Category",
-                "Dosage",
-                "Qty",
-                "Unit Price",
-                "Supplier",
-                "Expiry",
-                "Status",
-                "Actions",
-              ].map((h) => (
-                <TableHead
-                  key={h}
-                  className="pharma-table-header py-3 px-4 text-left"
-                >
-                  {h}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 5 }, (_, i) => `row-${i}`).map((rowKey) => (
-                <TableRow key={rowKey}>
-                  {Array.from({ length: 9 }, (_, j) => `cell-${j}`).map(
-                    (cellKey) => (
-                      <TableCell key={cellKey}>
-                        <Skeleton className="h-4 w-full" />
-                      </TableCell>
-                    ),
-                  )}
-                </TableRow>
-              ))
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center py-10">
-                  <div
-                    data-ocid="inventory.empty_state"
-                    className="text-slate-400 font-medium"
+        <div className="overflow-x-auto">
+          <Table data-ocid="inventory.table">
+            <TableHeader>
+              <TableRow className="bg-slate-50 border-b border-slate-200">
+                {[
+                  "Name",
+                  "Category",
+                  "Dosage",
+                  "Qty",
+                  "Purchase Price",
+                  "Sale Price",
+                  "Supplier",
+                  "Expiry",
+                  "Status",
+                  "Actions",
+                ].map((h) => (
+                  <TableHead
+                    key={h}
+                    className="pharma-table-header py-3 px-4 text-left whitespace-nowrap"
                   >
-                    No medicines found.
-                  </div>
-                </TableCell>
+                    {h}
+                  </TableHead>
+                ))}
               </TableRow>
-            ) : (
-              filtered.map((m, idx) => (
-                <TableRow
-                  key={m.id.toString()}
-                  className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
-                >
-                  <TableCell className="pharma-table-cell py-3 px-4 font-700 text-[13px]">
-                    {m.name}
-                  </TableCell>
-                  <TableCell className="pharma-table-cell py-3 px-4 text-[13px]">
-                    <Badge
-                      variant="outline"
-                      className="text-[11px] font-700 border-slate-300 text-black"
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 5 }, (_, i) => `row-${i}`).map(
+                  (rowKey) => (
+                    <TableRow key={rowKey}>
+                      {Array.from({ length: 10 }, (_, j) => `cell-${j}`).map(
+                        (cellKey) => (
+                          <TableCell key={cellKey}>
+                            <Skeleton className="h-4 w-full" />
+                          </TableCell>
+                        ),
+                      )}
+                    </TableRow>
+                  ),
+                )
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center py-10">
+                    <div
+                      data-ocid="inventory.empty_state"
+                      className="text-slate-400 font-medium"
                     >
-                      {m.category}
-                    </Badge>
+                      No medicines found.
+                    </div>
                   </TableCell>
-                  <TableCell className="pharma-table-cell py-3 px-4 text-[13px]">
-                    {m.dosage}
-                  </TableCell>
-                  <TableCell className="pharma-table-cell py-3 px-4 text-[13px] font-700">
-                    {Number(m.quantity)}
-                  </TableCell>
-                  <TableCell className="pharma-table-cell py-3 px-4 text-[13px]">
-                    ${m.unitPrice.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="pharma-table-cell py-3 px-4 text-[13px]">
-                    {supplierName(m.supplierId)}
-                  </TableCell>
-                  <TableCell className="pharma-table-cell py-3 px-4 text-[13px]">
-                    {m.expiryDate}
-                  </TableCell>
-                  <TableCell className="py-3 px-4">
-                    {m.isNearExpiry ? (
-                      <Badge className="bg-red-100 text-red-700 border border-red-300 font-700 text-[11px] gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        Near Expiry
+                </TableRow>
+              ) : (
+                filtered.map((m, idx) => (
+                  <TableRow
+                    key={m.id.toString()}
+                    data-ocid={`inventory.item.${idx + 1}`}
+                    className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                  >
+                    <TableCell className="pharma-table-cell py-3 px-4 font-700 text-[13px] whitespace-nowrap">
+                      {m.name}
+                    </TableCell>
+                    <TableCell className="pharma-table-cell py-3 px-4 text-[13px]">
+                      <Badge
+                        variant="outline"
+                        className="text-[11px] font-700 border-slate-300 text-black"
+                      >
+                        {m.category}
                       </Badge>
-                    ) : (
-                      <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-700 text-[11px]">
-                        OK
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="py-3 px-4">
-                    {isAdmin && (
+                    </TableCell>
+                    <TableCell className="pharma-table-cell py-3 px-4 text-[13px] whitespace-nowrap">
+                      {m.dosage}
+                    </TableCell>
+                    <TableCell className="pharma-table-cell py-3 px-4 text-[13px] font-700">
+                      {Number(m.quantity)}
+                    </TableCell>
+                    <TableCell className="pharma-table-cell py-3 px-4 text-[13px] whitespace-nowrap">
+                      ${m.purchasePrice.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="pharma-table-cell py-3 px-4 text-[13px] font-700 whitespace-nowrap">
+                      ${m.salePrice.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="pharma-table-cell py-3 px-4 text-[13px] whitespace-nowrap">
+                      {supplierName(m.supplierId)}
+                    </TableCell>
+                    <TableCell className="pharma-table-cell py-3 px-4 text-[13px] whitespace-nowrap">
+                      {m.expiryDate}
+                    </TableCell>
+                    <TableCell className="py-3 px-4">
+                      {m.isNearExpiry ? (
+                        <Badge className="bg-red-100 text-red-700 border border-red-300 font-700 text-[11px] gap-1 whitespace-nowrap">
+                          <AlertTriangle className="w-3 h-3" />
+                          Near Expiry
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-700 text-[11px]">
+                          OK
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="py-3 px-4">
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
-                          onClick={() => openEdit(m)}
+                          onClick={() => openEdit(m as Medicine)}
                           data-ocid={`inventory.edit_button.${idx + 1}`}
                           className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-700 transition-colors"
                           title="Edit"
@@ -599,7 +640,7 @@ export function Inventory() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setDeleteTarget(m)}
+                          onClick={() => setDeleteTarget(m as Medicine)}
                           data-ocid={`inventory.delete_button.${idx + 1}`}
                           className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
                           title="Delete"
@@ -607,13 +648,13 @@ export function Inventory() {
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Add/Edit Dialog */}
@@ -651,6 +692,7 @@ export function Inventory() {
                     setForm((f) => ({ ...f, name: e.target.value }))
                   }
                   placeholder="e.g., Augmentin"
+                  data-ocid="inventory.medicine.input"
                   className="text-black font-medium text-[13px]"
                 />
               </div>
@@ -662,7 +704,10 @@ export function Inventory() {
                   value={form.category}
                   onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}
                 >
-                  <SelectTrigger className="text-black font-medium text-[13px]">
+                  <SelectTrigger
+                    data-ocid="inventory.medicine.select"
+                    className="text-black font-medium text-[13px]"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -710,23 +755,6 @@ export function Inventory() {
               </div>
               <div>
                 <Label className="text-[12px] font-700 text-black mb-1.5 block">
-                  Unit Price (USD) *
-                </Label>
-                <Input
-                  required
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={form.unitPrice}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, unitPrice: e.target.value }))
-                  }
-                  placeholder="12.50"
-                  className="text-black font-medium text-[13px]"
-                />
-              </div>
-              <div>
-                <Label className="text-[12px] font-700 text-black mb-1.5 block">
                   Supplier
                 </Label>
                 <Select
@@ -753,6 +781,40 @@ export function Inventory() {
               </div>
               <div>
                 <Label className="text-[12px] font-700 text-black mb-1.5 block">
+                  Purchase Price (USD) *
+                </Label>
+                <Input
+                  required
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.purchasePrice}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, purchasePrice: e.target.value }))
+                  }
+                  placeholder="8.50"
+                  className="text-black font-medium text-[13px]"
+                />
+              </div>
+              <div>
+                <Label className="text-[12px] font-700 text-black mb-1.5 block">
+                  Sale Price (USD) *
+                </Label>
+                <Input
+                  required
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.salePrice}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, salePrice: e.target.value }))
+                  }
+                  placeholder="12.50"
+                  className="text-black font-medium text-[13px]"
+                />
+              </div>
+              <div>
+                <Label className="text-[12px] font-700 text-black mb-1.5 block">
                   Expiry Date *
                 </Label>
                 <Input
@@ -769,7 +831,9 @@ export function Inventory() {
                 <input
                   type="checkbox"
                   id="nearExpiry"
-                  checked={form.isNearExpiry}
+                  checked={
+                    form.isNearExpiry || isNearExpiryDate(form.expiryDate)
+                  }
                   onChange={(e) =>
                     setForm((f) => ({ ...f, isNearExpiry: e.target.checked }))
                   }
@@ -780,6 +844,11 @@ export function Inventory() {
                   className="text-[13px] font-700 text-black cursor-pointer"
                 >
                   Mark as Near Expiry
+                  {isNearExpiryDate(form.expiryDate) && (
+                    <span className="text-red-500 ml-1 text-[11px]">
+                      (auto-detected)
+                    </span>
+                  )}
                 </Label>
               </div>
             </div>
@@ -800,7 +869,7 @@ export function Inventory() {
                 className="bg-black hover:bg-zinc-800 text-white font-700 gap-2"
               >
                 {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                {editTarget ? "Update Medicine" : "Add Medicine"}
+                {editTarget ? "Save Changes" : "Add Medicine"}
               </Button>
             </DialogFooter>
           </form>
@@ -822,7 +891,7 @@ export function Inventory() {
             <AlertDialogDescription className="text-slate-500 text-[13px] font-medium">
               Are you sure you want to delete{" "}
               <span className="font-700 text-black">
-                "{deleteTarget?.name} {deleteTarget?.dosage}"
+                &quot;{deleteTarget?.name} {deleteTarget?.dosage}&quot;
               </span>
               ? This action cannot be undone.
             </AlertDialogDescription>

@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,37 +32,119 @@ import {
 import {
   useAddSupplier,
   useDeleteSupplier,
-  useIsAdmin,
+  useMedicines,
   useSuppliers,
   useUpdateSupplier,
 } from "@/hooks/useQueries";
-import { Loader2, Pencil, Plus, Trash2, Truck } from "lucide-react";
+import {
+  Loader2,
+  Mail,
+  MapPin,
+  Pencil,
+  Phone,
+  Pill,
+  Plus,
+  Trash2,
+  Truck,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Supplier } from "../backend.d";
 
-// ── Static fallback: always shown when backend returns empty ──
+// ── Static fallback ──────────────────────────────────────────────────────────
 const STATIC_SUPPLIERS = [
-  { id: 1n, name: "Ibn Sina", contact: "+20-2-2345-6789 | ibnsina@pharma.eg" },
+  {
+    id: 1n,
+    name: "Ibn Sina",
+    contact: JSON.stringify({
+      phone: "+20-2-2345-6789",
+      address: "Cairo, Egypt",
+      email: "ibnsina@pharma.eg",
+    }),
+  },
   {
     id: 2n,
     name: "Pharma Overseas",
-    contact: "+44-20-7946-0958 | overseas@pharmaint.co.uk",
+    contact: JSON.stringify({
+      phone: "+44-20-7946-0958",
+      address: "London, UK",
+      email: "overseas@pharmaint.co.uk",
+    }),
   },
   {
     id: 3n,
     name: "United Pharma",
-    contact: "+20-2-3456-7890 | info@unitedpharma.eg",
+    contact: JSON.stringify({
+      phone: "+20-2-3456-7890",
+      address: "Alexandria, Egypt",
+      email: "info@unitedpharma.eg",
+    }),
   },
-  { id: 4n, name: "Al-Ezaby", contact: "+20-2-4567-8901 | supply@alezaby.com" },
+  {
+    id: 4n,
+    name: "Al-Ezaby",
+    contact: JSON.stringify({
+      phone: "+20-2-4567-8901",
+      address: "Giza, Egypt",
+      email: "supply@alezaby.com",
+    }),
+  },
 ];
 
-type SupplierForm = { name: string; contact: string };
-const EMPTY_FORM: SupplierForm = { name: "", contact: "" };
+const STATIC_MEDICINES = [
+  { id: 1n, name: "ConCor 2.5mg", supplierId: 1n },
+  { id: 2n, name: "ConCor 5mg", supplierId: 1n },
+  { id: 3n, name: "ErastaPex", supplierId: 2n },
+  { id: 4n, name: "Augmentin 1g", supplierId: 3n },
+  { id: 5n, name: "Glucophage", supplierId: 2n },
+  { id: 6n, name: "Nexium", supplierId: 4n },
+];
+
+// ── Contact parsing/serialisation ─────────────────────────────────────────
+interface ContactData {
+  phone: string;
+  address: string;
+  email: string;
+}
+
+function parseContact(raw: string): ContactData {
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") {
+      return {
+        phone: parsed.phone ?? "",
+        address: parsed.address ?? "",
+        email: parsed.email ?? "",
+      };
+    }
+  } catch {
+    // legacy plain text — best-effort parse
+  }
+  return { phone: raw, address: "", email: "" };
+}
+
+function serializeContact(data: ContactData): string {
+  return JSON.stringify(data);
+}
+
+// ── Types ─────────────────────────────────────────────────────────────────
+interface SupplierForm {
+  name: string;
+  phone: string;
+  address: string;
+  email: string;
+}
+
+const EMPTY_FORM: SupplierForm = {
+  name: "",
+  phone: "",
+  address: "",
+  email: "",
+};
 
 export function Suppliers() {
   const { data: suppliers, isLoading } = useSuppliers();
-  const { data: isAdmin } = useIsAdmin();
+  const { data: medicines } = useMedicines();
   const addSupplier = useAddSupplier();
   const updateSupplier = useUpdateSupplier();
   const deleteSupplier = useDeleteSupplier();
@@ -71,6 +154,11 @@ export function Suppliers() {
   const [deleteTarget, setDeleteTarget] = useState<Supplier | null>(null);
   const [form, setForm] = useState<SupplierForm>(EMPTY_FORM);
 
+  const displaySuppliers =
+    suppliers && suppliers.length > 0 ? suppliers : STATIC_SUPPLIERS;
+  const displayMedicines =
+    medicines && medicines.length > 0 ? medicines : STATIC_MEDICINES;
+
   function openAdd() {
     setEditTarget(null);
     setForm(EMPTY_FORM);
@@ -79,7 +167,13 @@ export function Suppliers() {
 
   function openEdit(s: Supplier) {
     setEditTarget(s);
-    setForm({ name: s.name, contact: s.contact });
+    const c = parseContact(s.contact);
+    setForm({
+      name: s.name,
+      phone: c.phone,
+      address: c.address,
+      email: c.email,
+    });
     setDialogOpen(true);
   }
 
@@ -91,7 +185,12 @@ export function Suppliers() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const payload = { name: form.name.trim(), contact: form.contact.trim() };
+    const contact = serializeContact({
+      phone: form.phone.trim(),
+      address: form.address.trim(),
+      email: form.email.trim(),
+    });
+    const payload = { name: form.name.trim(), contact };
     try {
       if (editTarget) {
         await updateSupplier.mutateAsync({ id: editTarget.id, ...payload });
@@ -102,7 +201,7 @@ export function Suppliers() {
       }
       closeDialog();
     } catch {
-      toast.error("Operation failed. Please try again.");
+      toast.error("Login as admin to manage data");
     }
   }
 
@@ -112,22 +211,25 @@ export function Suppliers() {
       await deleteSupplier.mutateAsync(deleteTarget.id);
       toast.success(`"${deleteTarget.name}" removed from suppliers`);
     } catch {
-      toast.error("Delete failed. Please try again.");
+      toast.error("Login as admin to manage data");
     } finally {
       setDeleteTarget(null);
     }
   }
 
-  // Use backend data if available, else static fallback
-  const displaySuppliers =
-    suppliers && suppliers.length > 0 ? suppliers : STATIC_SUPPLIERS;
-
   const isPending = addSupplier.isPending || updateSupplier.isPending;
 
+  function getSuppliedMedicines(supplierId: bigint) {
+    return displayMedicines
+      .filter((m) => m.supplierId === supplierId)
+      .map((m) => ("dosage" in m ? `${m.name}` : m.name))
+      .slice(0, 3);
+  }
+
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-4 md:p-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-display font-800 text-black tracking-tight flex items-center gap-2">
             <Truck className="w-6 h-6 text-black" />
@@ -137,101 +239,161 @@ export function Suppliers() {
             {displaySuppliers.length} active suppliers
           </p>
         </div>
-        {isAdmin && (
-          <Button
-            onClick={openAdd}
-            data-ocid="suppliers.add_button"
-            className="bg-black hover:bg-zinc-800 text-white font-700 text-[13px] gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Supplier
-          </Button>
-        )}
+        <Button
+          onClick={openAdd}
+          data-ocid="suppliers.add_button"
+          className="bg-black hover:bg-zinc-800 text-white font-700 text-[13px] gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Add Supplier
+        </Button>
       </div>
 
       {/* Table */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
-        <Table data-ocid="suppliers.table">
-          <TableHeader>
-            <TableRow className="bg-slate-50 border-b border-slate-200">
-              {["#", "Supplier Name", "Contact", "Actions"].map((h) => (
-                <TableHead
-                  key={h}
-                  className="pharma-table-header py-3 px-4 text-left"
-                >
-                  {h}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 4 }, (_, i) => `row-${i}`).map((rowKey) => (
-                <TableRow key={rowKey}>
-                  {Array.from({ length: 4 }, (_, j) => `cell-${j}`).map(
-                    (cellKey) => (
-                      <TableCell key={cellKey}>
-                        <Skeleton className="h-4 w-full" />
-                      </TableCell>
-                    ),
-                  )}
-                </TableRow>
-              ))
-            ) : displaySuppliers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-10">
-                  <div
-                    data-ocid="suppliers.empty_state"
-                    className="text-slate-400 font-medium"
+        <div className="overflow-x-auto">
+          <Table data-ocid="suppliers.table">
+            <TableHeader>
+              <TableRow className="bg-slate-50 border-b border-slate-200">
+                {[
+                  "#",
+                  "Supplier Name",
+                  "Phone",
+                  "Email",
+                  "Address",
+                  "Supplied Medicines",
+                  "Actions",
+                ].map((h) => (
+                  <TableHead
+                    key={h}
+                    className="py-3 px-4 text-left text-[11px] font-800 text-slate-500 uppercase tracking-wider whitespace-nowrap"
                   >
-                    No suppliers found.
-                  </div>
-                </TableCell>
+                    {h}
+                  </TableHead>
+                ))}
               </TableRow>
-            ) : (
-              displaySuppliers.map((s, idx) => (
-                <TableRow
-                  key={s.id.toString()}
-                  className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
-                >
-                  <TableCell className="pharma-table-cell py-3 px-4 text-[13px] w-12">
-                    {idx + 1}
-                  </TableCell>
-                  <TableCell className="pharma-table-cell py-3 px-4 font-700 text-[13px]">
-                    {s.name}
-                  </TableCell>
-                  <TableCell className="pharma-table-cell py-3 px-4 text-[13px]">
-                    {s.contact}
-                  </TableCell>
-                  <TableCell className="py-3 px-4">
-                    {isAdmin && (
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => openEdit(s)}
-                          data-ocid={`suppliers.edit_button.${idx + 1}`}
-                          className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-700 transition-colors"
-                          title="Edit"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(s)}
-                          data-ocid={`suppliers.delete_button.${idx + 1}`}
-                          className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    )}
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 4 }, (_, i) => `row-${i}`).map(
+                  (rowKey) => (
+                    <TableRow key={rowKey}>
+                      {Array.from({ length: 7 }, (_, j) => `cell-${j}`).map(
+                        (cellKey) => (
+                          <TableCell key={cellKey}>
+                            <Skeleton className="h-4 w-full" />
+                          </TableCell>
+                        ),
+                      )}
+                    </TableRow>
+                  ),
+                )
+              ) : displaySuppliers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-10">
+                    <div
+                      data-ocid="suppliers.empty_state"
+                      className="text-slate-400 font-medium"
+                    >
+                      No suppliers found.
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                displaySuppliers.map((s, idx) => {
+                  const contact = parseContact(s.contact);
+                  const suppliedMeds = getSuppliedMedicines(s.id);
+                  return (
+                    <TableRow
+                      key={s.id.toString()}
+                      data-ocid={`suppliers.item.${idx + 1}`}
+                      className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                    >
+                      <TableCell className="py-3 px-4 text-[13px] text-slate-400 font-medium w-10">
+                        {idx + 1}
+                      </TableCell>
+                      <TableCell className="py-3 px-4 font-700 text-black text-[13px] whitespace-nowrap">
+                        {s.name}
+                      </TableCell>
+                      <TableCell className="py-3 px-4 text-[12px] text-slate-600 whitespace-nowrap">
+                        {contact.phone ? (
+                          <span className="flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-slate-400" />
+                            {contact.phone}
+                          </span>
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-3 px-4 text-[12px] text-slate-600 whitespace-nowrap">
+                        {contact.email ? (
+                          <span className="flex items-center gap-1">
+                            <Mail className="w-3 h-3 text-slate-400" />
+                            {contact.email}
+                          </span>
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-3 px-4 text-[12px] text-slate-600">
+                        {contact.address ? (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                            {contact.address}
+                          </span>
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-3 px-4">
+                        <div className="flex flex-wrap gap-1">
+                          {suppliedMeds.length > 0 ? (
+                            suppliedMeds.map((m) => (
+                              <Badge
+                                key={m}
+                                variant="outline"
+                                className="text-[10px] font-600 border-slate-300 text-black px-1.5 py-0.5 flex items-center gap-0.5"
+                              >
+                                <Pill className="w-2.5 h-2.5" />
+                                {m}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-[12px] text-slate-300">
+                              —
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3 px-4">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => openEdit(s as Supplier)}
+                            data-ocid={`suppliers.edit_button.${idx + 1}`}
+                            className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-700 transition-colors"
+                            title="Edit"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(s as Supplier)}
+                            data-ocid={`suppliers.delete_button.${idx + 1}`}
+                            className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Add/Edit Dialog */}
@@ -243,7 +405,7 @@ export function Suppliers() {
       >
         <DialogContent
           data-ocid="suppliers.dialog"
-          className="max-w-md bg-white"
+          className="max-w-lg bg-white"
           onInteractOutside={(e) => e.preventDefault()}
         >
           <DialogHeader>
@@ -268,19 +430,52 @@ export function Suppliers() {
                   setForm((f) => ({ ...f, name: e.target.value }))
                 }
                 placeholder="e.g., Ibn Sina Pharma"
+                data-ocid="suppliers.name.input"
                 className="text-black font-medium text-[13px]"
               />
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-[12px] font-700 text-black mb-1.5 block">
+                  Phone
+                </Label>
+                <Input
+                  value={form.phone}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, phone: e.target.value }))
+                  }
+                  placeholder="+20-2-1234-5678"
+                  data-ocid="suppliers.phone.input"
+                  className="text-black font-medium text-[13px]"
+                />
+              </div>
+              <div>
+                <Label className="text-[12px] font-700 text-black mb-1.5 block">
+                  Email
+                </Label>
+                <Input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, email: e.target.value }))
+                  }
+                  placeholder="supplier@example.com"
+                  data-ocid="suppliers.email.input"
+                  className="text-black font-medium text-[13px]"
+                />
+              </div>
+            </div>
             <div>
               <Label className="text-[12px] font-700 text-black mb-1.5 block">
-                Contact
+                Address
               </Label>
               <Input
-                value={form.contact}
+                value={form.address}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, contact: e.target.value }))
+                  setForm((f) => ({ ...f, address: e.target.value }))
                 }
-                placeholder="Phone, email or address"
+                placeholder="City, Country"
+                data-ocid="suppliers.address.input"
                 className="text-black font-medium text-[13px]"
               />
             </div>
@@ -301,14 +496,14 @@ export function Suppliers() {
                 className="bg-black hover:bg-zinc-800 text-white font-700 gap-2"
               >
                 {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                {editTarget ? "Update Supplier" : "Add Supplier"}
+                {editTarget ? "Save Changes" : "Add Supplier"}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirm Dialog */}
+      {/* Delete Confirm */}
       <AlertDialog
         open={!!deleteTarget}
         onOpenChange={(open) => {
@@ -323,7 +518,7 @@ export function Suppliers() {
             <AlertDialogDescription className="text-slate-500 text-[13px] font-medium">
               Are you sure you want to remove{" "}
               <span className="font-700 text-black">
-                "{deleteTarget?.name}"
+                &quot;{deleteTarget?.name}&quot;
               </span>{" "}
               from suppliers?
             </AlertDialogDescription>

@@ -10,13 +10,13 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Layout } from "./components/layout/Layout";
 import { useActor } from "./hooks/useActor";
-import { Alerts } from "./pages/Alerts";
 import { Dashboard } from "./pages/Dashboard";
 import { Inventory } from "./pages/Inventory";
+import { Reports } from "./pages/Reports";
 import { Sales } from "./pages/Sales";
 import { Suppliers } from "./pages/Suppliers";
 
-// ─── Loading screen while initializing ──────────────────────────────────────
+// ─── Loading screen while initializing ───────────────────────────────────────────
 function InitScreen({ status }: { status: "loading" | "error" | "done" }) {
   if (status === "done") return null;
   return (
@@ -51,7 +51,7 @@ function InitScreen({ status }: { status: "loading" | "error" | "done" }) {
   );
 }
 
-// ─── Root component with init logic ─────────────────────────────────────────
+// ─── Root component with init logic ───────────────────────────────────────────
 function Root() {
   const { actor, isFetching } = useActor();
   const [initStatus, setInitStatus] = useState<"loading" | "error" | "done">(
@@ -68,7 +68,6 @@ function Root() {
         if (!cancelled) setInitStatus("done");
       } catch (err) {
         console.warn("Init error (non-fatal):", err);
-        // Even on error, show the app — data might already be initialized
         if (!cancelled) setInitStatus("done");
       }
     })();
@@ -86,7 +85,7 @@ function Root() {
   );
 }
 
-// ─── Routes ──────────────────────────────────────────────────────────────────
+// ─── Routes ────────────────────────────────────────────────────────────────────
 const rootRoute = createRootRoute({ component: Root });
 
 const layoutRoute = createRoute({
@@ -119,10 +118,10 @@ const suppliersRoute = createRoute({
   component: Suppliers,
 });
 
-const alertsRoute = createRoute({
+const reportsRoute = createRoute({
   getParentRoute: () => layoutRoute,
-  path: "/alerts",
-  component: Alerts,
+  path: "/reports",
+  component: Reports,
 });
 
 const routeTree = rootRoute.addChildren([
@@ -131,7 +130,7 @@ const routeTree = rootRoute.addChildren([
     inventoryRoute,
     salesRoute,
     suppliersRoute,
-    alertsRoute,
+    reportsRoute,
   ]),
 ]);
 
@@ -143,7 +142,7 @@ declare module "@tanstack/react-router" {
   }
 }
 
-// ─── App ─────────────────────────────────────────────────────────────────────
+// ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   return (
     <>

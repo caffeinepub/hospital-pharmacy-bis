@@ -10,64 +10,67 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface AnalyticsSummary {
+  'totalSales' : bigint,
+  'totalMedicines' : bigint,
+  'totalRevenue' : number,
+}
+export interface CategoryDemand {
+  'feb' : bigint,
+  'jan' : bigint,
+  'mar' : bigint,
+  'category' : string,
+}
 export interface Medicine {
   'id' : bigint,
+  'purchasePrice' : number,
   'dosage' : string,
   'expiryDate' : string,
   'name' : string,
   'quantity' : bigint,
   'category' : string,
-  'unitPrice' : number,
+  'salePrice' : number,
   'isNearExpiry' : boolean,
   'supplierId' : bigint,
 }
 export interface Sale {
   'id' : bigint,
+  'purchasePrice' : number,
   'patientName' : string,
   'quantity' : bigint,
   'category' : string,
-  'unitPrice' : number,
+  'salePrice' : number,
   'totalPrice' : number,
   'medicineId' : bigint,
   'saleDate' : string,
   'medicineName' : string,
 }
+export interface SalesTrend {
+  'month' : string,
+  'totalSales' : bigint,
+  'totalRevenue' : number,
+}
 export interface Supplier { 'id' : bigint, 'contact' : string, 'name' : string }
-export interface UserProfile { 'name' : string, 'role' : string }
+export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addMedicine' : ActorMethod<
-    [string, string, string, bigint, bigint, number, string, boolean],
+    [string, string, string, bigint, bigint, number, number, string, boolean],
     Medicine
   >,
   'addSupplier' : ActorMethod<[string, string], Supplier>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'deleteMedicine' : ActorMethod<[bigint], boolean>,
   'deleteSupplier' : ActorMethod<[bigint], boolean>,
-  'getAnalyticsSummary' : ActorMethod<
-    [],
-    {
-      'totalSales' : bigint,
-      'totalMedicines' : bigint,
-      'totalRevenue' : number,
-    }
-  >,
+  'getAnalyticsSummary' : ActorMethod<[], AnalyticsSummary>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getCategoryDemand' : ActorMethod<
-    [],
-    Array<
-      { 'feb' : bigint, 'jan' : bigint, 'mar' : bigint, 'category' : string }
-    >
-  >,
+  'getCategoryDemand' : ActorMethod<[], Array<CategoryDemand>>,
   'getMedicines' : ActorMethod<[], Array<Medicine>>,
-  'getMonthlySalesTrend' : ActorMethod<
-    [],
-    Array<{ 'month' : string, 'totalSales' : bigint, 'totalRevenue' : number }>
-  >,
+  'getMonthlySalesTrend' : ActorMethod<[], Array<SalesTrend>>,
   'getNearExpiryAlerts' : ActorMethod<[], Array<Medicine>>,
   'getSales' : ActorMethod<[], Array<Sale>>,
   'getSuppliers' : ActorMethod<[], Array<Supplier>>,
@@ -77,7 +80,18 @@ export interface _SERVICE {
   'recordSale' : ActorMethod<[bigint, bigint, string, string], [] | [Sale]>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'updateMedicine' : ActorMethod<
-    [bigint, string, string, string, bigint, bigint, number, string, boolean],
+    [
+      bigint,
+      string,
+      string,
+      string,
+      bigint,
+      bigint,
+      number,
+      number,
+      string,
+      boolean,
+    ],
     [] | [Medicine]
   >,
   'updateSupplier' : ActorMethod<[bigint, string, string], [] | [Supplier]>,

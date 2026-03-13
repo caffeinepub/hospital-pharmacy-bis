@@ -10,12 +10,13 @@ import { IDL } from '@icp-sdk/core/candid';
 
 export const Medicine = IDL.Record({
   'id' : IDL.Nat,
+  'purchasePrice' : IDL.Float64,
   'dosage' : IDL.Text,
   'expiryDate' : IDL.Text,
   'name' : IDL.Text,
   'quantity' : IDL.Nat,
   'category' : IDL.Text,
-  'unitPrice' : IDL.Float64,
+  'salePrice' : IDL.Float64,
   'isNearExpiry' : IDL.Bool,
   'supplierId' : IDL.Nat,
 });
@@ -29,13 +30,30 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
-export const UserProfile = IDL.Record({ 'name' : IDL.Text, 'role' : IDL.Text });
+export const AnalyticsSummary = IDL.Record({
+  'totalSales' : IDL.Nat,
+  'totalMedicines' : IDL.Nat,
+  'totalRevenue' : IDL.Float64,
+});
+export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const CategoryDemand = IDL.Record({
+  'feb' : IDL.Nat,
+  'jan' : IDL.Nat,
+  'mar' : IDL.Nat,
+  'category' : IDL.Text,
+});
+export const SalesTrend = IDL.Record({
+  'month' : IDL.Text,
+  'totalSales' : IDL.Nat,
+  'totalRevenue' : IDL.Float64,
+});
 export const Sale = IDL.Record({
   'id' : IDL.Nat,
+  'purchasePrice' : IDL.Float64,
   'patientName' : IDL.Text,
   'quantity' : IDL.Nat,
   'category' : IDL.Text,
-  'unitPrice' : IDL.Float64,
+  'salePrice' : IDL.Float64,
   'totalPrice' : IDL.Float64,
   'medicineId' : IDL.Nat,
   'saleDate' : IDL.Text,
@@ -52,6 +70,7 @@ export const idlService = IDL.Service({
         IDL.Nat,
         IDL.Nat,
         IDL.Float64,
+        IDL.Float64,
         IDL.Text,
         IDL.Bool,
       ],
@@ -62,47 +81,12 @@ export const idlService = IDL.Service({
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'deleteMedicine' : IDL.Func([IDL.Nat], [IDL.Bool], []),
   'deleteSupplier' : IDL.Func([IDL.Nat], [IDL.Bool], []),
-  'getAnalyticsSummary' : IDL.Func(
-      [],
-      [
-        IDL.Record({
-          'totalSales' : IDL.Nat,
-          'totalMedicines' : IDL.Nat,
-          'totalRevenue' : IDL.Float64,
-        }),
-      ],
-      ['query'],
-    ),
+  'getAnalyticsSummary' : IDL.Func([], [AnalyticsSummary], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getCategoryDemand' : IDL.Func(
-      [],
-      [
-        IDL.Vec(
-          IDL.Record({
-            'feb' : IDL.Nat,
-            'jan' : IDL.Nat,
-            'mar' : IDL.Nat,
-            'category' : IDL.Text,
-          })
-        ),
-      ],
-      ['query'],
-    ),
+  'getCategoryDemand' : IDL.Func([], [IDL.Vec(CategoryDemand)], ['query']),
   'getMedicines' : IDL.Func([], [IDL.Vec(Medicine)], ['query']),
-  'getMonthlySalesTrend' : IDL.Func(
-      [],
-      [
-        IDL.Vec(
-          IDL.Record({
-            'month' : IDL.Text,
-            'totalSales' : IDL.Nat,
-            'totalRevenue' : IDL.Float64,
-          })
-        ),
-      ],
-      ['query'],
-    ),
+  'getMonthlySalesTrend' : IDL.Func([], [IDL.Vec(SalesTrend)], ['query']),
   'getNearExpiryAlerts' : IDL.Func([], [IDL.Vec(Medicine)], ['query']),
   'getSales' : IDL.Func([], [IDL.Vec(Sale)], ['query']),
   'getSuppliers' : IDL.Func([], [IDL.Vec(Supplier)], ['query']),
@@ -128,6 +112,7 @@ export const idlService = IDL.Service({
         IDL.Nat,
         IDL.Nat,
         IDL.Float64,
+        IDL.Float64,
         IDL.Text,
         IDL.Bool,
       ],
@@ -146,12 +131,13 @@ export const idlInitArgs = [];
 export const idlFactory = ({ IDL }) => {
   const Medicine = IDL.Record({
     'id' : IDL.Nat,
+    'purchasePrice' : IDL.Float64,
     'dosage' : IDL.Text,
     'expiryDate' : IDL.Text,
     'name' : IDL.Text,
     'quantity' : IDL.Nat,
     'category' : IDL.Text,
-    'unitPrice' : IDL.Float64,
+    'salePrice' : IDL.Float64,
     'isNearExpiry' : IDL.Bool,
     'supplierId' : IDL.Nat,
   });
@@ -165,13 +151,30 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
-  const UserProfile = IDL.Record({ 'name' : IDL.Text, 'role' : IDL.Text });
+  const AnalyticsSummary = IDL.Record({
+    'totalSales' : IDL.Nat,
+    'totalMedicines' : IDL.Nat,
+    'totalRevenue' : IDL.Float64,
+  });
+  const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const CategoryDemand = IDL.Record({
+    'feb' : IDL.Nat,
+    'jan' : IDL.Nat,
+    'mar' : IDL.Nat,
+    'category' : IDL.Text,
+  });
+  const SalesTrend = IDL.Record({
+    'month' : IDL.Text,
+    'totalSales' : IDL.Nat,
+    'totalRevenue' : IDL.Float64,
+  });
   const Sale = IDL.Record({
     'id' : IDL.Nat,
+    'purchasePrice' : IDL.Float64,
     'patientName' : IDL.Text,
     'quantity' : IDL.Nat,
     'category' : IDL.Text,
-    'unitPrice' : IDL.Float64,
+    'salePrice' : IDL.Float64,
     'totalPrice' : IDL.Float64,
     'medicineId' : IDL.Nat,
     'saleDate' : IDL.Text,
@@ -188,6 +191,7 @@ export const idlFactory = ({ IDL }) => {
           IDL.Nat,
           IDL.Nat,
           IDL.Float64,
+          IDL.Float64,
           IDL.Text,
           IDL.Bool,
         ],
@@ -198,47 +202,12 @@ export const idlFactory = ({ IDL }) => {
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'deleteMedicine' : IDL.Func([IDL.Nat], [IDL.Bool], []),
     'deleteSupplier' : IDL.Func([IDL.Nat], [IDL.Bool], []),
-    'getAnalyticsSummary' : IDL.Func(
-        [],
-        [
-          IDL.Record({
-            'totalSales' : IDL.Nat,
-            'totalMedicines' : IDL.Nat,
-            'totalRevenue' : IDL.Float64,
-          }),
-        ],
-        ['query'],
-      ),
+    'getAnalyticsSummary' : IDL.Func([], [AnalyticsSummary], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getCategoryDemand' : IDL.Func(
-        [],
-        [
-          IDL.Vec(
-            IDL.Record({
-              'feb' : IDL.Nat,
-              'jan' : IDL.Nat,
-              'mar' : IDL.Nat,
-              'category' : IDL.Text,
-            })
-          ),
-        ],
-        ['query'],
-      ),
+    'getCategoryDemand' : IDL.Func([], [IDL.Vec(CategoryDemand)], ['query']),
     'getMedicines' : IDL.Func([], [IDL.Vec(Medicine)], ['query']),
-    'getMonthlySalesTrend' : IDL.Func(
-        [],
-        [
-          IDL.Vec(
-            IDL.Record({
-              'month' : IDL.Text,
-              'totalSales' : IDL.Nat,
-              'totalRevenue' : IDL.Float64,
-            })
-          ),
-        ],
-        ['query'],
-      ),
+    'getMonthlySalesTrend' : IDL.Func([], [IDL.Vec(SalesTrend)], ['query']),
     'getNearExpiryAlerts' : IDL.Func([], [IDL.Vec(Medicine)], ['query']),
     'getSales' : IDL.Func([], [IDL.Vec(Sale)], ['query']),
     'getSuppliers' : IDL.Func([], [IDL.Vec(Supplier)], ['query']),
@@ -263,6 +232,7 @@ export const idlFactory = ({ IDL }) => {
           IDL.Text,
           IDL.Nat,
           IDL.Nat,
+          IDL.Float64,
           IDL.Float64,
           IDL.Text,
           IDL.Bool,

@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useMedicines, useRecordSale, useSales } from "@/hooks/useQueries";
-import { Loader2, Receipt, ShoppingCart } from "lucide-react";
+import { Loader2, Receipt } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -31,10 +31,11 @@ const STATIC_SALES = [
     medicineName: "Augmentin 1g",
     category: "Antibiotics",
     quantity: 2n,
-    unitPrice: 15.5,
+    salePrice: 15.5,
     totalPrice: 31.0,
     patientName: "Ahmed Hassan",
     saleDate: "2026-01-03",
+    purchasePrice: 10.85,
   },
   {
     id: 2n,
@@ -42,10 +43,11 @@ const STATIC_SALES = [
     medicineName: "Glucophage 500mg",
     category: "Diabetes",
     quantity: 3n,
-    unitPrice: 5.5,
+    salePrice: 5.5,
     totalPrice: 16.5,
     patientName: "Fatima Ali",
     saleDate: "2026-01-05",
+    purchasePrice: 3.85,
   },
   {
     id: 3n,
@@ -53,10 +55,11 @@ const STATIC_SALES = [
     medicineName: "ConCor 2.5mg",
     category: "Hypertension",
     quantity: 1n,
-    unitPrice: 4.5,
+    salePrice: 4.5,
     totalPrice: 4.5,
     patientName: "Mohamed Samir",
     saleDate: "2026-01-06",
+    purchasePrice: 3.15,
   },
   {
     id: 4n,
@@ -64,10 +67,11 @@ const STATIC_SALES = [
     medicineName: "Tavanic 500mg",
     category: "Antibiotics",
     quantity: 2n,
-    unitPrice: 18.0,
+    salePrice: 18.0,
     totalPrice: 36.0,
     patientName: "Sara Khalil",
     saleDate: "2026-01-08",
+    purchasePrice: 12.6,
   },
   {
     id: 5n,
@@ -75,10 +79,11 @@ const STATIC_SALES = [
     medicineName: "Amaryl 1mg",
     category: "Diabetes",
     quantity: 2n,
-    unitPrice: 9.5,
+    salePrice: 9.5,
     totalPrice: 19.0,
     patientName: "Omar Farouk",
     saleDate: "2026-01-10",
+    purchasePrice: 6.65,
   },
   {
     id: 6n,
@@ -86,10 +91,11 @@ const STATIC_SALES = [
     medicineName: "Controloc 40mg",
     category: "Ulcer & Others",
     quantity: 1n,
-    unitPrice: 9.25,
+    salePrice: 9.25,
     totalPrice: 9.25,
     patientName: "Layla Nasser",
     saleDate: "2026-01-12",
+    purchasePrice: 6.48,
   },
   {
     id: 7n,
@@ -97,10 +103,11 @@ const STATIC_SALES = [
     medicineName: "Glucophage 1000mg",
     category: "Diabetes",
     quantity: 3n,
-    unitPrice: 8.0,
+    salePrice: 8.0,
     totalPrice: 24.0,
     patientName: "Karim Adel",
     saleDate: "2026-01-14",
+    purchasePrice: 5.6,
   },
   {
     id: 8n,
@@ -108,10 +115,11 @@ const STATIC_SALES = [
     medicineName: "SupraX 400mg",
     category: "Antibiotics",
     quantity: 1n,
-    unitPrice: 12.0,
+    salePrice: 12.0,
     totalPrice: 12.0,
     patientName: "Nour Ibrahim",
     saleDate: "2026-01-15",
+    purchasePrice: 8.4,
   },
   {
     id: 9n,
@@ -119,10 +127,11 @@ const STATIC_SALES = [
     medicineName: "ConCor 10mg",
     category: "Hypertension",
     quantity: 2n,
-    unitPrice: 7.2,
+    salePrice: 7.2,
     totalPrice: 14.4,
     patientName: "Hana Mostafa",
     saleDate: "2026-01-17",
+    purchasePrice: 5.04,
   },
   {
     id: 10n,
@@ -130,10 +139,11 @@ const STATIC_SALES = [
     medicineName: "Nexium 40mg",
     category: "Ulcer & Others",
     quantity: 2n,
-    unitPrice: 11.5,
+    salePrice: 11.5,
     totalPrice: 23.0,
     patientName: "Tarek Saleh",
     saleDate: "2026-01-19",
+    purchasePrice: 8.05,
   },
   {
     id: 11n,
@@ -141,10 +151,11 @@ const STATIC_SALES = [
     medicineName: "Amaryl 2mg",
     category: "Diabetes",
     quantity: 1n,
-    unitPrice: 12.0,
+    salePrice: 12.0,
     totalPrice: 12.0,
     patientName: "Rana Mahmoud",
     saleDate: "2026-01-21",
+    purchasePrice: 8.4,
   },
   {
     id: 12n,
@@ -152,10 +163,11 @@ const STATIC_SALES = [
     medicineName: "ErastaPex 40mg",
     category: "Hypertension",
     quantity: 2n,
-    unitPrice: 11.0,
+    salePrice: 11.0,
     totalPrice: 22.0,
     patientName: "Youssef Amr",
     saleDate: "2026-01-22",
+    purchasePrice: 7.7,
   },
   {
     id: 13n,
@@ -163,10 +175,11 @@ const STATIC_SALES = [
     medicineName: "Crestor 10mg",
     category: "Ulcer & Others",
     quantity: 1n,
-    unitPrice: 14.0,
+    salePrice: 14.0,
     totalPrice: 14.0,
     patientName: "Dina Sami",
     saleDate: "2026-01-24",
+    purchasePrice: 9.8,
   },
   {
     id: 14n,
@@ -174,10 +187,11 @@ const STATIC_SALES = [
     medicineName: "Ceftriaxone 1g",
     category: "Antibiotics",
     quantity: 2n,
-    unitPrice: 22.5,
+    salePrice: 22.5,
     totalPrice: 45.0,
     patientName: "Walid Fathy",
     saleDate: "2026-01-25",
+    purchasePrice: 15.75,
   },
   {
     id: 15n,
@@ -185,10 +199,11 @@ const STATIC_SALES = [
     medicineName: "Galvus Met 50/1000mg",
     category: "Diabetes",
     quantity: 1n,
-    unitPrice: 24.0,
+    salePrice: 24.0,
     totalPrice: 24.0,
     patientName: "Mona Zaki",
     saleDate: "2026-01-27",
+    purchasePrice: 16.8,
   },
   {
     id: 16n,
@@ -196,10 +211,11 @@ const STATIC_SALES = [
     medicineName: "Pantoloc 20mg",
     category: "Ulcer & Others",
     quantity: 2n,
-    unitPrice: 7.8,
+    salePrice: 7.8,
     totalPrice: 15.6,
     patientName: "Khaled Gamal",
     saleDate: "2026-01-29",
+    purchasePrice: 5.46,
   },
   {
     id: 17n,
@@ -207,10 +223,11 @@ const STATIC_SALES = [
     medicineName: "ConCor 5mg",
     category: "Hypertension",
     quantity: 1n,
-    unitPrice: 5.75,
+    salePrice: 5.75,
     totalPrice: 5.75,
     patientName: "Amira Hossam",
     saleDate: "2026-01-31",
+    purchasePrice: 4.03,
   },
   {
     id: 18n,
@@ -218,10 +235,11 @@ const STATIC_SALES = [
     medicineName: "Augmentin 1g",
     category: "Antibiotics",
     quantity: 3n,
-    unitPrice: 15.5,
+    salePrice: 15.5,
     totalPrice: 46.5,
     patientName: "Hassan Youssef",
     saleDate: "2026-02-02",
+    purchasePrice: 10.85,
   },
   {
     id: 19n,
@@ -229,10 +247,11 @@ const STATIC_SALES = [
     medicineName: "Glucophage 500mg",
     category: "Diabetes",
     quantity: 2n,
-    unitPrice: 5.5,
+    salePrice: 5.5,
     totalPrice: 11.0,
     patientName: "Nadia Hamid",
     saleDate: "2026-02-03",
+    purchasePrice: 3.85,
   },
   {
     id: 20n,
@@ -240,10 +259,11 @@ const STATIC_SALES = [
     medicineName: "Flagyl 500mg",
     category: "Antibiotics",
     quantity: 2n,
-    unitPrice: 6.75,
+    salePrice: 6.75,
     totalPrice: 13.5,
     patientName: "Sherif Taha",
     saleDate: "2026-02-05",
+    purchasePrice: 4.73,
   },
   {
     id: 21n,
@@ -251,10 +271,11 @@ const STATIC_SALES = [
     medicineName: "ErastaPex 20mg",
     category: "Hypertension",
     quantity: 1n,
-    unitPrice: 8.5,
+    salePrice: 8.5,
     totalPrice: 8.5,
     patientName: "Ghada Shawky",
     saleDate: "2026-02-07",
+    purchasePrice: 5.95,
   },
   {
     id: 22n,
@@ -262,10 +283,11 @@ const STATIC_SALES = [
     medicineName: "Glucophage 1000mg",
     category: "Diabetes",
     quantity: 4n,
-    unitPrice: 8.0,
+    salePrice: 8.0,
     totalPrice: 32.0,
     patientName: "Bassem Ragab",
     saleDate: "2026-02-08",
+    purchasePrice: 5.6,
   },
   {
     id: 23n,
@@ -273,10 +295,11 @@ const STATIC_SALES = [
     medicineName: "SupraX 400mg",
     category: "Antibiotics",
     quantity: 2n,
-    unitPrice: 12.0,
+    salePrice: 12.0,
     totalPrice: 24.0,
     patientName: "Samira Lotfy",
     saleDate: "2026-02-10",
+    purchasePrice: 8.4,
   },
   {
     id: 24n,
@@ -284,10 +307,11 @@ const STATIC_SALES = [
     medicineName: "Ator 20mg",
     category: "Ulcer & Others",
     quantity: 1n,
-    unitPrice: 8.5,
+    salePrice: 8.5,
     totalPrice: 8.5,
     patientName: "Essam Fouad",
     saleDate: "2026-02-12",
+    purchasePrice: 5.95,
   },
   {
     id: 25n,
@@ -295,10 +319,11 @@ const STATIC_SALES = [
     medicineName: "Amaryl 1mg",
     category: "Diabetes",
     quantity: 3n,
-    unitPrice: 9.5,
+    salePrice: 9.5,
     totalPrice: 28.5,
     patientName: "Abeer Magdy",
     saleDate: "2026-02-13",
+    purchasePrice: 6.65,
   },
   {
     id: 26n,
@@ -306,10 +331,11 @@ const STATIC_SALES = [
     medicineName: "Controloc 40mg",
     category: "Ulcer & Others",
     quantity: 2n,
-    unitPrice: 9.25,
+    salePrice: 9.25,
     totalPrice: 18.5,
     patientName: "Randa Ezzat",
     saleDate: "2026-02-15",
+    purchasePrice: 6.48,
   },
   {
     id: 27n,
@@ -317,10 +343,11 @@ const STATIC_SALES = [
     medicineName: "Tavanic 500mg",
     category: "Antibiotics",
     quantity: 1n,
-    unitPrice: 18.0,
+    salePrice: 18.0,
     totalPrice: 18.0,
     patientName: "Mahmoud Atef",
     saleDate: "2026-02-17",
+    purchasePrice: 12.6,
   },
   {
     id: 28n,
@@ -328,10 +355,11 @@ const STATIC_SALES = [
     medicineName: "ConCor 10mg",
     category: "Hypertension",
     quantity: 2n,
-    unitPrice: 7.2,
+    salePrice: 7.2,
     totalPrice: 14.4,
     patientName: "Iman Barakat",
     saleDate: "2026-02-19",
+    purchasePrice: 5.04,
   },
   {
     id: 29n,
@@ -339,10 +367,11 @@ const STATIC_SALES = [
     medicineName: "Aspirin 100mg",
     category: "Ulcer & Others",
     quantity: 2n,
-    unitPrice: 2.5,
+    salePrice: 2.5,
     totalPrice: 5.0,
     patientName: "Fady Wahba",
     saleDate: "2026-02-20",
+    purchasePrice: 1.75,
   },
   {
     id: 30n,
@@ -350,10 +379,11 @@ const STATIC_SALES = [
     medicineName: "Augmentin 1g",
     category: "Antibiotics",
     quantity: 2n,
-    unitPrice: 15.5,
+    salePrice: 15.5,
     totalPrice: 31.0,
     patientName: "Lamia Sobhy",
     saleDate: "2026-02-22",
+    purchasePrice: 10.85,
   },
   {
     id: 31n,
@@ -361,10 +391,11 @@ const STATIC_SALES = [
     medicineName: "Galvus Met 50/1000mg",
     category: "Diabetes",
     quantity: 1n,
-    unitPrice: 24.0,
+    salePrice: 24.0,
     totalPrice: 24.0,
     patientName: "Sherif Helmy",
     saleDate: "2026-02-24",
+    purchasePrice: 16.8,
   },
   {
     id: 32n,
@@ -372,10 +403,11 @@ const STATIC_SALES = [
     medicineName: "Amaryl 2mg",
     category: "Diabetes",
     quantity: 2n,
-    unitPrice: 12.0,
+    salePrice: 12.0,
     totalPrice: 24.0,
     patientName: "Heba Mansour",
     saleDate: "2026-02-25",
+    purchasePrice: 8.4,
   },
   {
     id: 33n,
@@ -383,10 +415,11 @@ const STATIC_SALES = [
     medicineName: "ErastaPex 40mg",
     category: "Hypertension",
     quantity: 1n,
-    unitPrice: 11.0,
+    salePrice: 11.0,
     totalPrice: 11.0,
     patientName: "Amr Osman",
     saleDate: "2026-02-27",
+    purchasePrice: 7.7,
   },
   {
     id: 34n,
@@ -394,10 +427,11 @@ const STATIC_SALES = [
     medicineName: "Metformin 850mg",
     category: "Diabetes",
     quantity: 3n,
-    unitPrice: 4.75,
+    salePrice: 4.75,
     totalPrice: 14.25,
     patientName: "Noha Salem",
     saleDate: "2026-02-28",
+    purchasePrice: 3.33,
   },
   {
     id: 35n,
@@ -405,10 +439,11 @@ const STATIC_SALES = [
     medicineName: "Augmentin 1g",
     category: "Antibiotics",
     quantity: 3n,
-    unitPrice: 15.5,
+    salePrice: 15.5,
     totalPrice: 46.5,
     patientName: "Ibrahim Badr",
     saleDate: "2026-03-01",
+    purchasePrice: 10.85,
   },
   {
     id: 36n,
@@ -416,10 +451,11 @@ const STATIC_SALES = [
     medicineName: "Glucophage 500mg",
     category: "Diabetes",
     quantity: 4n,
-    unitPrice: 5.5,
+    salePrice: 5.5,
     totalPrice: 22.0,
     patientName: "Yasmine Salama",
     saleDate: "2026-03-03",
+    purchasePrice: 3.85,
   },
   {
     id: 37n,
@@ -427,10 +463,11 @@ const STATIC_SALES = [
     medicineName: "Glucophage 1000mg",
     category: "Diabetes",
     quantity: 2n,
-    unitPrice: 8.0,
+    salePrice: 8.0,
     totalPrice: 16.0,
     patientName: "Mostafa Emad",
     saleDate: "2026-03-05",
+    purchasePrice: 5.6,
   },
   {
     id: 38n,
@@ -438,10 +475,11 @@ const STATIC_SALES = [
     medicineName: "SupraX 400mg",
     category: "Antibiotics",
     quantity: 2n,
-    unitPrice: 12.0,
+    salePrice: 12.0,
     totalPrice: 24.0,
     patientName: "Doaa Abdel",
     saleDate: "2026-03-07",
+    purchasePrice: 8.4,
   },
   {
     id: 39n,
@@ -449,10 +487,11 @@ const STATIC_SALES = [
     medicineName: "Amaryl 1mg",
     category: "Diabetes",
     quantity: 3n,
-    unitPrice: 9.5,
+    salePrice: 9.5,
     totalPrice: 28.5,
     patientName: "Samir Naguib",
     saleDate: "2026-03-08",
+    purchasePrice: 6.65,
   },
   {
     id: 40n,
@@ -460,10 +499,11 @@ const STATIC_SALES = [
     medicineName: "ErastaPex 20mg",
     category: "Hypertension",
     quantity: 2n,
-    unitPrice: 8.5,
+    salePrice: 8.5,
     totalPrice: 17.0,
     patientName: "Hanan Gohar",
     saleDate: "2026-03-10",
+    purchasePrice: 5.95,
   },
   {
     id: 41n,
@@ -471,10 +511,11 @@ const STATIC_SALES = [
     medicineName: "Tavanic 500mg",
     category: "Antibiotics",
     quantity: 1n,
-    unitPrice: 18.0,
+    salePrice: 18.0,
     totalPrice: 18.0,
     patientName: "Wael Diab",
     saleDate: "2026-03-12",
+    purchasePrice: 12.6,
   },
   {
     id: 42n,
@@ -482,10 +523,11 @@ const STATIC_SALES = [
     medicineName: "Controloc 40mg",
     category: "Ulcer & Others",
     quantity: 2n,
-    unitPrice: 9.25,
+    salePrice: 9.25,
     totalPrice: 18.5,
     patientName: "Mariam Fawzi",
     saleDate: "2026-03-13",
+    purchasePrice: 6.48,
   },
   {
     id: 43n,
@@ -493,10 +535,11 @@ const STATIC_SALES = [
     medicineName: "Ator 20mg",
     category: "Ulcer & Others",
     quantity: 2n,
-    unitPrice: 8.5,
+    salePrice: 8.5,
     totalPrice: 17.0,
     patientName: "Tamer Badawi",
     saleDate: "2026-03-15",
+    purchasePrice: 5.95,
   },
   {
     id: 44n,
@@ -504,10 +547,11 @@ const STATIC_SALES = [
     medicineName: "ConCor 5mg",
     category: "Hypertension",
     quantity: 1n,
-    unitPrice: 5.75,
+    salePrice: 5.75,
     totalPrice: 5.75,
     patientName: "Shady Anis",
     saleDate: "2026-03-17",
+    purchasePrice: 4.03,
   },
   {
     id: 45n,
@@ -515,10 +559,11 @@ const STATIC_SALES = [
     medicineName: "Bisoprolol 5mg",
     category: "Hypertension",
     quantity: 2n,
-    unitPrice: 6.0,
+    salePrice: 6.0,
     totalPrice: 12.0,
     patientName: "Reem Soliman",
     saleDate: "2026-03-18",
+    purchasePrice: 4.2,
   },
   {
     id: 46n,
@@ -526,10 +571,11 @@ const STATIC_SALES = [
     medicineName: "Ceftriaxone 1g",
     category: "Antibiotics",
     quantity: 2n,
-    unitPrice: 22.5,
+    salePrice: 22.5,
     totalPrice: 45.0,
     patientName: "Amgad Khalaf",
     saleDate: "2026-03-20",
+    purchasePrice: 15.75,
   },
   {
     id: 47n,
@@ -537,10 +583,11 @@ const STATIC_SALES = [
     medicineName: "Nexium 40mg",
     category: "Ulcer & Others",
     quantity: 1n,
-    unitPrice: 11.5,
+    salePrice: 11.5,
     totalPrice: 11.5,
     patientName: "Nagwa Rashad",
     saleDate: "2026-03-21",
+    purchasePrice: 8.05,
   },
   {
     id: 48n,
@@ -548,10 +595,11 @@ const STATIC_SALES = [
     medicineName: "Omeprazole 20mg",
     category: "Ulcer & Others",
     quantity: 3n,
-    unitPrice: 3.8,
+    salePrice: 3.8,
     totalPrice: 11.4,
     patientName: "Osama Tantawi",
     saleDate: "2026-03-23",
+    purchasePrice: 2.66,
   },
   {
     id: 49n,
@@ -559,10 +607,11 @@ const STATIC_SALES = [
     medicineName: "Augmentin 1g",
     category: "Antibiotics",
     quantity: 2n,
-    unitPrice: 15.5,
+    salePrice: 15.5,
     totalPrice: 31.0,
     patientName: "Aya Fouad",
     saleDate: "2026-03-25",
+    purchasePrice: 10.85,
   },
   {
     id: 50n,
@@ -570,32 +619,125 @@ const STATIC_SALES = [
     medicineName: "Glucophage 500mg",
     category: "Diabetes",
     quantity: 3n,
-    unitPrice: 5.5,
+    salePrice: 5.5,
     totalPrice: 16.5,
     patientName: "Hazem Lotfy",
     saleDate: "2026-03-27",
+    purchasePrice: 3.85,
   },
 ];
 
-type SaleForm = {
+type InvoiceForm = {
   medicineId: string;
   quantity: string;
+  price: string;
   patientName: string;
   saleDate: string;
 };
 
-const EMPTY_FORM: SaleForm = {
+const EMPTY_FORM: InvoiceForm = {
   medicineId: "",
   quantity: "",
+  price: "",
   patientName: "",
   saleDate: new Date().toISOString().split("T")[0],
 };
+
+// ── Static fallback medicines (same list as Inventory) ──
+const STATIC_MEDICINES_FOR_SALES = [
+  { id: 1n, name: "ConCor", dosage: "2.5mg", quantity: 200n, salePrice: 4.5 },
+  { id: 2n, name: "ConCor", dosage: "5mg", quantity: 150n, salePrice: 5.75 },
+  { id: 3n, name: "ConCor", dosage: "10mg", quantity: 180n, salePrice: 7.2 },
+  { id: 4n, name: "ErastaPex", dosage: "20mg", quantity: 120n, salePrice: 8.5 },
+  {
+    id: 5n,
+    name: "ErastaPex",
+    dosage: "40mg",
+    quantity: 100n,
+    salePrice: 11.0,
+  },
+  { id: 6n, name: "Augmentin", dosage: "1g", quantity: 90n, salePrice: 15.5 },
+  { id: 7n, name: "SupraX", dosage: "400mg", quantity: 110n, salePrice: 12.0 },
+  { id: 8n, name: "Tavanic", dosage: "500mg", quantity: 80n, salePrice: 18.0 },
+  { id: 9n, name: "Ceftriaxone", dosage: "1g", quantity: 60n, salePrice: 22.5 },
+  { id: 10n, name: "Flagyl", dosage: "500mg", quantity: 130n, salePrice: 6.75 },
+  { id: 11n, name: "Amaryl", dosage: "1mg", quantity: 200n, salePrice: 9.5 },
+  { id: 12n, name: "Amaryl", dosage: "2mg", quantity: 180n, salePrice: 12.0 },
+  {
+    id: 13n,
+    name: "Glucophage",
+    dosage: "500mg",
+    quantity: 250n,
+    salePrice: 5.5,
+  },
+  {
+    id: 14n,
+    name: "Glucophage",
+    dosage: "1000mg",
+    quantity: 220n,
+    salePrice: 8.0,
+  },
+  {
+    id: 15n,
+    name: "Galvus Met",
+    dosage: "50/1000mg",
+    quantity: 90n,
+    salePrice: 24.0,
+  },
+  {
+    id: 16n,
+    name: "Controloc",
+    dosage: "40mg",
+    quantity: 160n,
+    salePrice: 9.25,
+  },
+  { id: 17n, name: "Nexium", dosage: "40mg", quantity: 140n, salePrice: 11.5 },
+  { id: 18n, name: "Pantoloc", dosage: "20mg", quantity: 170n, salePrice: 7.5 },
+  { id: 19n, name: "Ator", dosage: "20mg", quantity: 190n, salePrice: 8.5 },
+  { id: 20n, name: "Crestor", dosage: "10mg", quantity: 160n, salePrice: 12.5 },
+  { id: 21n, name: "Zocor", dosage: "20mg", quantity: 130n, salePrice: 7.0 },
+  {
+    id: 22n,
+    name: "Bisoprolol",
+    dosage: "5mg",
+    quantity: 110n,
+    salePrice: 6.0,
+  },
+  {
+    id: 23n,
+    name: "Amlodipine",
+    dosage: "5mg",
+    quantity: 200n,
+    salePrice: 4.75,
+  },
+  {
+    id: 24n,
+    name: "Omeprazole",
+    dosage: "20mg",
+    quantity: 150n,
+    salePrice: 3.8,
+  },
+];
 
 export function Sales() {
   const { data: sales, isLoading: salesLoading } = useSales();
   const { data: medicines } = useMedicines();
   const recordSale = useRecordSale();
-  const [form, setForm] = useState<SaleForm>(EMPTY_FORM);
+  const [form, setForm] = useState<InvoiceForm>(EMPTY_FORM);
+
+  // Use backend medicines if loaded, else static fallback
+  const displayMedicines =
+    medicines && medicines.length > 0 ? medicines : STATIC_MEDICINES_FOR_SALES;
+
+  // When medicine is selected, auto-fill price
+  function handleMedicineSelect(medId: string) {
+    const med = displayMedicines.find((m) => String(Number(m.id)) === medId);
+    setForm((f) => ({
+      ...f,
+      medicineId: medId,
+      price: med ? String(med.salePrice) : f.price,
+    }));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -608,6 +750,16 @@ export function Sales() {
       toast.error("Quantity must be a positive number");
       return;
     }
+    const selectedMed = displayMedicines.find(
+      (m) => String(Number(m.id)) === form.medicineId,
+    );
+    // Stock validation
+    if (selectedMed && qty > Number(selectedMed.quantity)) {
+      toast.error(
+        `Insufficient stock — only ${Number(selectedMed.quantity)} units available for ${selectedMed.name} ${selectedMed.dosage}`,
+      );
+      return;
+    }
     try {
       const result = await recordSale.mutateAsync({
         medicineId: BigInt(form.medicineId),
@@ -616,15 +768,17 @@ export function Sales() {
         saleDate: form.saleDate,
       });
       if (result) {
-        toast.success(
-          `Sale recorded — Total: $${result.totalPrice.toFixed(2)}`,
-        );
+        const medName = selectedMed
+          ? `${selectedMed.name} ${selectedMed.dosage}`
+          : "Medicine";
+        const total = result.totalPrice.toFixed(2);
+        toast.success(`Invoice created — ${medName} x${qty} = $${total}`);
         setForm({ ...EMPTY_FORM, saleDate: form.saleDate });
       } else {
-        toast.error("Sale failed — check stock availability");
+        toast.error("Invoice failed — check stock availability");
       }
     } catch {
-      toast.error("Sale recording failed. Please try again.");
+      toast.error("Login as admin to record sales");
     }
   }
 
@@ -637,22 +791,22 @@ export function Sales() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-display font-800 text-black tracking-tight flex items-center gap-2">
-          <ShoppingCart className="w-6 h-6 text-black" />
-          Sales Management
+          <Receipt className="w-6 h-6 text-black" />
+          Invoices / Sales
         </h1>
         <p className="text-sm text-slate-500 mt-0.5 font-medium">
-          Record new sales and view transaction history
+          Add new invoices and view transaction history
         </p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* New Sale Form */}
+        {/* New Invoice Form */}
         <div className="xl:col-span-1">
           <Card className="bg-white border-slate-200 shadow-xs">
             <CardHeader className="pb-3 border-b border-slate-100">
               <CardTitle className="text-[15px] font-display font-700 text-black flex items-center gap-2">
                 <Receipt className="w-4 h-4 text-black" />
-                Record New Sale
+                Add New Invoice
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
@@ -663,9 +817,7 @@ export function Sales() {
                   </Label>
                   <Select
                     value={form.medicineId}
-                    onValueChange={(v) =>
-                      setForm((f) => ({ ...f, medicineId: v }))
-                    }
+                    onValueChange={handleMedicineSelect}
                   >
                     <SelectTrigger
                       data-ocid="sales.medicine.select"
@@ -674,18 +826,40 @@ export function Sales() {
                       <SelectValue placeholder="Select medicine" />
                     </SelectTrigger>
                     <SelectContent>
-                      {(medicines ?? []).map((m) => (
+                      {displayMedicines.map((m) => (
                         <SelectItem
                           key={m.id.toString()}
                           value={String(Number(m.id))}
                           className="font-medium text-black"
                         >
-                          {m.name} {m.dosage} (Qty: {Number(m.quantity)})
+                          {m.name} {m.dosage} (Stock: {Number(m.quantity)})
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Stock info banner */}
+                {form.medicineId &&
+                  (() => {
+                    const selMed = displayMedicines.find(
+                      (m) => String(Number(m.id)) === form.medicineId,
+                    );
+                    if (!selMed) return null;
+                    const stock = Number(selMed.quantity);
+                    const isLow = stock <= 20;
+                    return (
+                      <div
+                        data-ocid="sales.stock_info.panel"
+                        className={`flex items-center justify-between rounded-md px-3 py-2 text-[12px] font-700 border ${isLow ? "bg-red-50 border-red-200 text-red-700" : "bg-slate-50 border-slate-200 text-slate-600"}`}
+                      >
+                        <span>Available Stock</span>
+                        <span className={isLow ? "text-red-700" : "text-black"}>
+                          {stock} units{isLow ? " — Low Stock" : ""}
+                        </span>
+                      </div>
+                    );
+                  })()}
 
                 <div>
                   <Label className="text-[12px] font-700 text-black mb-1.5 block">
@@ -701,6 +875,50 @@ export function Sales() {
                       setForm((f) => ({ ...f, quantity: e.target.value }))
                     }
                     placeholder="1"
+                    className="text-black font-medium text-[13px]"
+                  />
+                  {form.quantity &&
+                    form.medicineId &&
+                    (() => {
+                      const selMed = displayMedicines.find(
+                        (m) => String(Number(m.id)) === form.medicineId,
+                      );
+                      const qty = Number.parseInt(form.quantity, 10);
+                      if (!selMed || !qty) return null;
+                      const stock = Number(selMed.quantity);
+                      if (qty > stock) {
+                        return (
+                          <p
+                            data-ocid="sales.quantity.error_state"
+                            className="text-red-600 text-[11px] font-700 mt-1"
+                          >
+                            Exceeds available stock ({stock} units)
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
+                </div>
+
+                <div>
+                  <Label className="text-[12px] font-700 text-black mb-1.5 block">
+                    Price (USD)
+                    {form.medicineId && (
+                      <span className="text-slate-400 font-normal ml-1">
+                        (auto-filled from sale price)
+                      </span>
+                    )}
+                  </Label>
+                  <Input
+                    data-ocid="sales.price.input"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={form.price}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, price: e.target.value }))
+                    }
+                    placeholder="0.00"
                     className="text-black font-medium text-[13px]"
                   />
                 </div>
@@ -722,7 +940,7 @@ export function Sales() {
 
                 <div>
                   <Label className="text-[12px] font-700 text-black mb-1.5 block">
-                    Sale Date *
+                    Date *
                   </Label>
                   <Input
                     data-ocid="sales.date.input"
@@ -736,6 +954,22 @@ export function Sales() {
                   />
                 </div>
 
+                {/* Live total preview */}
+                {form.quantity && form.price && (
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                    <p className="text-[11px] font-700 text-slate-500 uppercase tracking-wider">
+                      Invoice Total
+                    </p>
+                    <p className="text-xl font-display font-800 text-black mt-0.5">
+                      $
+                      {(
+                        Number.parseFloat(form.price) *
+                        Number.parseInt(form.quantity, 10)
+                      ).toFixed(2)}
+                    </p>
+                  </div>
+                )}
+
                 <Button
                   type="submit"
                   disabled={recordSale.isPending}
@@ -745,7 +979,7 @@ export function Sales() {
                   {recordSale.isPending && (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   )}
-                  Record Sale
+                  Add Invoice
                 </Button>
               </form>
             </CardContent>
@@ -764,18 +998,18 @@ export function Sales() {
                 })}
               </p>
               <p className="text-[12px] text-slate-400 font-medium mt-1">
-                From {displaySales.length} transactions
+                From {displaySales.length} invoices
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Sales History Table */}
+        {/* Invoice History Table */}
         <div className="xl:col-span-2">
           <Card className="bg-white border-slate-200 shadow-xs">
             <CardHeader className="pb-3 border-b border-slate-100">
               <CardTitle className="text-[15px] font-display font-700 text-black">
-                Sales History
+                Invoice History
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -787,14 +1021,14 @@ export function Sales() {
                         "Medicine",
                         "Category",
                         "Qty",
-                        "Unit Price",
+                        "Sale Price",
                         "Total",
                         "Patient",
                         "Date",
                       ].map((h) => (
                         <TableHead
                           key={h}
-                          className="pharma-table-header py-3 px-4 text-left"
+                          className="pharma-table-header py-3 px-4 text-left whitespace-nowrap"
                         >
                           {h}
                         </TableHead>
@@ -824,19 +1058,20 @@ export function Sales() {
                             data-ocid="sales.empty_state"
                             className="text-slate-400 font-medium"
                           >
-                            No sales recorded yet.
+                            No invoices recorded yet.
                           </div>
                         </TableCell>
                       </TableRow>
                     ) : (
                       [...displaySales]
                         .sort((a, b) => b.saleDate.localeCompare(a.saleDate))
-                        .map((s) => (
+                        .map((s, idx) => (
                           <TableRow
                             key={s.id.toString()}
+                            data-ocid={`sales.item.${idx + 1}`}
                             className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
                           >
-                            <TableCell className="pharma-table-cell py-3 px-4 font-700 text-[13px]">
+                            <TableCell className="pharma-table-cell py-3 px-4 font-700 text-[13px] whitespace-nowrap">
                               {s.medicineName}
                             </TableCell>
                             <TableCell className="pharma-table-cell py-3 px-4 text-[13px]">
@@ -845,16 +1080,16 @@ export function Sales() {
                             <TableCell className="pharma-table-cell py-3 px-4 text-[13px] font-700">
                               {Number(s.quantity)}
                             </TableCell>
-                            <TableCell className="pharma-table-cell py-3 px-4 text-[13px]">
-                              ${s.unitPrice.toFixed(2)}
+                            <TableCell className="pharma-table-cell py-3 px-4 text-[13px] whitespace-nowrap">
+                              ${s.salePrice.toFixed(2)}
                             </TableCell>
-                            <TableCell className="pharma-table-cell py-3 px-4 text-[13px] font-700 text-black">
+                            <TableCell className="pharma-table-cell py-3 px-4 text-[13px] font-700 text-black whitespace-nowrap">
                               ${s.totalPrice.toFixed(2)}
                             </TableCell>
                             <TableCell className="pharma-table-cell py-3 px-4 text-[13px]">
                               {s.patientName || "—"}
                             </TableCell>
-                            <TableCell className="pharma-table-cell py-3 px-4 text-[13px]">
+                            <TableCell className="pharma-table-cell py-3 px-4 text-[13px] whitespace-nowrap">
                               {s.saleDate}
                             </TableCell>
                           </TableRow>

@@ -1,15 +1,15 @@
 import Float "mo:core/Float";
 import Map "mo:core/Map";
 import Nat "mo:core/Nat";
-import Runtime "mo:core/Runtime";
 import Order "mo:core/Order";
-import Time "mo:core/Time";
-import Text "mo:core/Text";
+import Runtime "mo:core/Runtime";
 import Array "mo:core/Array";
 import Iter "mo:core/Iter";
 import Principal "mo:core/Principal";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
+
+
 
 actor {
   type Medicine = {
@@ -19,7 +19,8 @@ actor {
     dosage : Text;
     quantity : Nat;
     supplierId : Nat;
-    unitPrice : Float;
+    purchasePrice : Float;
+    salePrice : Float;
     expiryDate : Text;
     isNearExpiry : Bool;
   };
@@ -27,7 +28,7 @@ actor {
   type Supplier = {
     id : Nat;
     name : Text;
-    contact : Text;
+    contact : Text; // JSON with phone/address/email
   };
 
   type Sale = {
@@ -36,7 +37,8 @@ actor {
     medicineName : Text;
     category : Text;
     quantity : Nat;
-    unitPrice : Float;
+    purchasePrice : Float;
+    salePrice : Float;
     totalPrice : Float;
     saleDate : Text;
     patientName : Text;
@@ -44,7 +46,25 @@ actor {
 
   public type UserProfile = {
     name : Text;
-    role : Text;
+  };
+
+  type SalesTrend = {
+    month : Text;
+    totalSales : Nat;
+    totalRevenue : Float;
+  };
+
+  type CategoryDemand = {
+    category : Text;
+    jan : Nat;
+    feb : Nat;
+    mar : Nat;
+  };
+
+  type AnalyticsSummary = {
+    totalMedicines : Nat;
+    totalSales : Nat;
+    totalRevenue : Float;
   };
 
   module Medicine {
@@ -72,14 +92,13 @@ actor {
   let medicines = Map.empty<Nat, Medicine>();
   let suppliers = Map.empty<Nat, Supplier>();
   let sales = Map.empty<Nat, Sale>();
+  let userProfiles = Map.empty<Principal, UserProfile>();
 
   // Initialize the user system state
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  let userProfiles = Map.empty<Principal, UserProfile>();
-
-  // User profile management
+  // User Profile Management
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view profiles");
@@ -101,75 +120,7 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  public shared ({ caller }) func initializeData() : async () {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only admins can initialize the system");
-    };
-
-    // Add suppliers
-    let supplierArray = Array.tabulate(
-      4,
-      func(i) {
-        {
-          id = nextSupplierId + i;
-          name = "Supplier " # (nextSupplierId + i).toText();
-          contact = "Contact " # (nextSupplierId + i).toText();
-        };
-      },
-    );
-
-    for ((i, supplier) in supplierArray.enumerate()) {
-      suppliers.add(nextSupplierId + i, supplier);
-    };
-    nextSupplierId += 4;
-
-    // Add medicines
-    for (i in Nat.range(1, 20)) {
-      let category = if (i <= 5) { "Category A" } else if (i <= 10) {
-        "Category B";
-      } else { "Category C" };
-      let medicine = {
-        id = nextMedicineId;
-        name = "Medicine " # nextMedicineId.toText();
-        category;
-        dosage = "Dosage " # nextMedicineId.toText();
-        quantity = 100;
-        supplierId = supplierArray[(nextMedicineId - 1) % 4].id;
-        unitPrice = 10.0 + (nextMedicineId * 2).toFloat();
-        expiryDate = "2024-12-31";
-        isNearExpiry = false;
-      };
-      medicines.add(nextMedicineId, medicine);
-      nextMedicineId += 1;
-    };
-
-    // Add sales
-    for (i in Nat.range(1, 50)) {
-      let medicineId = if (i % 20 == 0) { 20 } else { i % 20 };
-      let quantity = 1 + (i % 5);
-
-      switch (medicines.get(medicineId)) {
-        case (?med) {
-          let sale : Sale = {
-            id = nextSaleId;
-            medicineId;
-            medicineName = med.name;
-            category = med.category;
-            quantity;
-            unitPrice = med.unitPrice;
-            totalPrice = med.unitPrice * quantity.toFloat();
-            saleDate = "2024-06-01";
-            patientName = "Patient " # nextSaleId.toText();
-          };
-          sales.add(nextSaleId, sale);
-          nextSaleId += 1;
-        };
-        case (null) {};
-      };
-    };
-  };
-
-  // Medicine management
+  // Medicines
   public query ({ caller }) func getMedicines() : async [Medicine] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view medicines");
@@ -183,7 +134,8 @@ actor {
     dosage : Text,
     quantity : Nat,
     supplierId : Nat,
-    unitPrice : Float,
+    purchasePrice : Float,
+    salePrice : Float,
     expiryDate : Text,
     isNearExpiry : Bool,
   ) : async Medicine {
@@ -198,7 +150,8 @@ actor {
       dosage;
       quantity;
       supplierId;
-      unitPrice;
+      purchasePrice;
+      salePrice;
       expiryDate;
       isNearExpiry;
     };
@@ -214,7 +167,8 @@ actor {
     dosage : Text,
     quantity : Nat,
     supplierId : Nat,
-    unitPrice : Float,
+    purchasePrice : Float,
+    salePrice : Float,
     expiryDate : Text,
     isNearExpiry : Bool,
   ) : async ?Medicine {
@@ -231,7 +185,8 @@ actor {
           dosage;
           quantity;
           supplierId;
-          unitPrice;
+          purchasePrice;
+          salePrice;
           expiryDate;
           isNearExpiry;
         };
@@ -256,7 +211,7 @@ actor {
     };
   };
 
-  // Supplier management
+  // Suppliers
   public query ({ caller }) func getSuppliers() : async [Supplier] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view suppliers");
@@ -312,7 +267,7 @@ actor {
     };
   };
 
-  // Sales management
+  // Sales
   public query ({ caller }) func getSales() : async [Sale] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view sales");
@@ -337,8 +292,9 @@ actor {
           medicineName = med.name;
           category = med.category;
           quantity;
-          unitPrice = med.unitPrice;
-          totalPrice = med.unitPrice * quantity.toFloat();
+          purchasePrice = med.purchasePrice;
+          salePrice = med.salePrice;
+          totalPrice = med.salePrice * quantity.toFloat();
           saleDate;
           patientName;
         };
@@ -363,8 +319,8 @@ actor {
     medicines.values().toArray().filter(func(m : Medicine) : Bool { m.isNearExpiry });
   };
 
-  // Analytics functions
-  public query ({ caller }) func getMonthlySalesTrend() : async [{ month : Text; totalSales : Nat; totalRevenue : Float }] {
+  // Analytics
+  public query ({ caller }) func getMonthlySalesTrend() : async [SalesTrend] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view analytics");
     };
@@ -384,7 +340,7 @@ actor {
       };
     };
 
-    var result : [{ month : Text; totalSales : Nat; totalRevenue : Float }] = [];
+    var result : [SalesTrend] = [];
     for ((month, data) in monthMap.entries()) {
       result := result.concat([{ month; totalSales = data.totalSales; totalRevenue = data.totalRevenue }]);
     };
@@ -392,7 +348,7 @@ actor {
     result;
   };
 
-  public query ({ caller }) func getCategoryDemand() : async [{ category : Text; jan : Nat; feb : Nat; mar : Nat }] {
+  public query ({ caller }) func getCategoryDemand() : async [CategoryDemand] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view analytics");
     };
@@ -410,7 +366,7 @@ actor {
       };
     };
 
-    var result : [{ category : Text; jan : Nat; feb : Nat; mar : Nat }] = [];
+    var result : [CategoryDemand] = [];
     for ((category, data) in categoryMap.entries()) {
       result := result.concat([{ category; jan = data.jan; feb = data.feb; mar = data.mar }]);
     };
@@ -418,7 +374,7 @@ actor {
     result;
   };
 
-  public query ({ caller }) func getAnalyticsSummary() : async { totalMedicines : Nat; totalSales : Nat; totalRevenue : Float } {
+  public query ({ caller }) func getAnalyticsSummary() : async AnalyticsSummary {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view analytics");
     };
@@ -435,6 +391,82 @@ actor {
       totalMedicines = medicines.size();
       totalSales;
       totalRevenue;
+    };
+  };
+
+  // Data Initialization
+  public shared ({ caller }) func initializeData() : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can initialize the system");
+    };
+
+    // Idempotency check: only initialize if medicines map is empty
+    if (medicines.size() > 0) {
+      return;
+    };
+
+    // Add suppliers
+    let supplierArray = Array.tabulate(
+      4,
+      func(i) {
+        {
+          id = nextSupplierId + i;
+          name = "Supplier " # (nextSupplierId + i).toText();
+          contact = "Contact " # (nextSupplierId + i).toText();
+        };
+      },
+    );
+
+    for ((i, supplier) in supplierArray.enumerate()) {
+      suppliers.add(nextSupplierId + i, supplier);
+    };
+    nextSupplierId += 4;
+
+    // Add medicines
+    for (i in Nat.range(1, 20)) {
+      let category = if (i <= 5) { "Category A" } else if (i <= 10) {
+        "Category B";
+      } else { "Category C" };
+      let medicine = {
+        id = nextMedicineId;
+        name = "Medicine " # nextMedicineId.toText();
+        category;
+        dosage = "Dosage " # nextMedicineId.toText();
+        quantity = 100;
+        supplierId = supplierArray[(nextMedicineId - 1) % 4].id;
+        purchasePrice = 10.0 + (nextMedicineId * 2).toFloat();
+        salePrice = 15.0 + (nextMedicineId * 2).toFloat();
+        expiryDate = "2024-12-31";
+        isNearExpiry = false;
+      };
+      medicines.add(nextMedicineId, medicine);
+      nextMedicineId += 1;
+    };
+
+    // Add sales
+    for (i in Nat.range(1, 50)) {
+      let medicineId = if (i % 20 == 0) { 20 } else { i % 20 };
+      let quantity = 1 + (i % 5);
+
+      switch (medicines.get(medicineId)) {
+        case (?med) {
+          let sale : Sale = {
+            id = nextSaleId;
+            medicineId;
+            medicineName = med.name;
+            category = med.category;
+            quantity;
+            purchasePrice = med.purchasePrice;
+            salePrice = med.salePrice;
+            totalPrice = med.salePrice * quantity.toFloat();
+            saleDate = "2024-06-01";
+            patientName = "Patient " # nextSaleId.toText();
+          };
+          sales.add(nextSaleId, sale);
+          nextSaleId += 1;
+        };
+        case (null) {};
+      };
     };
   };
 };

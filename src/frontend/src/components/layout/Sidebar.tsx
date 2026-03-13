@@ -3,12 +3,13 @@ import { cn } from "@/lib/utils";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   Activity,
-  AlertTriangle,
+  FileText,
   LayoutDashboard,
   Pill,
   Shield,
   ShoppingCart,
   Truck,
+  X,
 } from "lucide-react";
 
 const navItems = [
@@ -20,15 +21,9 @@ const navItems = [
   },
   {
     path: "/inventory",
-    label: "Inventory",
+    label: "Medicines",
     icon: Pill,
-    ocid: "nav.inventory.link",
-  },
-  {
-    path: "/sales",
-    label: "Sales",
-    icon: ShoppingCart,
-    ocid: "nav.sales.link",
+    ocid: "nav.medicines.link",
   },
   {
     path: "/suppliers",
@@ -37,21 +32,31 @@ const navItems = [
     ocid: "nav.suppliers.link",
   },
   {
-    path: "/alerts",
-    label: "Alerts",
-    icon: AlertTriangle,
-    ocid: "nav.alerts.link",
+    path: "/sales",
+    label: "Sales",
+    icon: ShoppingCart,
+    ocid: "nav.sales.link",
+  },
+  {
+    path: "/reports",
+    label: "Reports",
+    icon: FileText,
+    ocid: "nav.reports.link",
   },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+export function Sidebar({ onClose }: SidebarProps) {
   const location = useLocation();
   const { data: isAdmin } = useIsAdmin();
 
   return (
-    <aside className="w-64 min-h-screen bg-black border-r border-zinc-800 flex flex-col flex-shrink-0">
+    <aside className="w-64 min-h-screen h-full bg-black border-r border-zinc-800 flex flex-col flex-shrink-0">
       {/* Logo */}
-      <div className="px-6 py-5 border-b border-zinc-800">
+      <div className="px-6 py-5 border-b border-zinc-800 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
             <Activity className="w-5 h-5 text-black" />
@@ -65,6 +70,17 @@ export function Sidebar() {
             </div>
           </div>
         </div>
+        {/* Close button — mobile only */}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="lg:hidden p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+            aria-label="Close menu"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
@@ -80,6 +96,7 @@ export function Sidebar() {
                 key={item.path}
                 to={item.path}
                 data-ocid={item.ocid}
+                onClick={onClose}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-semibold transition-all duration-150",
                   isActive
@@ -95,16 +112,13 @@ export function Sidebar() {
                   size={18}
                 />
                 {item.label}
-                {item.path === "/alerts" && (
-                  <span className="ml-auto w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                )}
               </Link>
             );
           })}
         </div>
       </nav>
 
-      {/* Footer — always shows admin identity */}
+      {/* Footer */}
       <div className="px-4 py-4 border-t border-zinc-800">
         <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-zinc-800 rounded-lg">
           <Shield className="w-3.5 h-3.5 text-white flex-shrink-0" />

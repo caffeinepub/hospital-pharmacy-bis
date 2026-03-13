@@ -89,16 +89,27 @@ export class ExternalBlob {
         return this;
     }
 }
+export interface AnalyticsSummary {
+    totalSales: bigint;
+    totalMedicines: bigint;
+    totalRevenue: number;
+}
 export interface Medicine {
     id: bigint;
+    purchasePrice: number;
     dosage: string;
     expiryDate: string;
     name: string;
     quantity: bigint;
     category: string;
-    unitPrice: number;
+    salePrice: number;
     isNearExpiry: boolean;
     supplierId: bigint;
+}
+export interface SalesTrend {
+    month: string;
+    totalSales: bigint;
+    totalRevenue: number;
 }
 export interface Supplier {
     id: bigint;
@@ -107,18 +118,24 @@ export interface Supplier {
 }
 export interface Sale {
     id: bigint;
+    purchasePrice: number;
     patientName: string;
     quantity: bigint;
     category: string;
-    unitPrice: number;
+    salePrice: number;
     totalPrice: number;
     medicineId: bigint;
     saleDate: string;
     medicineName: string;
 }
+export interface CategoryDemand {
+    feb: bigint;
+    jan: bigint;
+    mar: bigint;
+    category: string;
+}
 export interface UserProfile {
     name: string;
-    role: string;
 }
 export enum UserRole {
     admin = "admin",
@@ -127,30 +144,17 @@ export enum UserRole {
 }
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
-    addMedicine(name: string, category: string, dosage: string, quantity: bigint, supplierId: bigint, unitPrice: number, expiryDate: string, isNearExpiry: boolean): Promise<Medicine>;
+    addMedicine(name: string, category: string, dosage: string, quantity: bigint, supplierId: bigint, purchasePrice: number, salePrice: number, expiryDate: string, isNearExpiry: boolean): Promise<Medicine>;
     addSupplier(name: string, contact: string): Promise<Supplier>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     deleteMedicine(id: bigint): Promise<boolean>;
     deleteSupplier(id: bigint): Promise<boolean>;
-    getAnalyticsSummary(): Promise<{
-        totalSales: bigint;
-        totalMedicines: bigint;
-        totalRevenue: number;
-    }>;
+    getAnalyticsSummary(): Promise<AnalyticsSummary>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
-    getCategoryDemand(): Promise<Array<{
-        feb: bigint;
-        jan: bigint;
-        mar: bigint;
-        category: string;
-    }>>;
+    getCategoryDemand(): Promise<Array<CategoryDemand>>;
     getMedicines(): Promise<Array<Medicine>>;
-    getMonthlySalesTrend(): Promise<Array<{
-        month: string;
-        totalSales: bigint;
-        totalRevenue: number;
-    }>>;
+    getMonthlySalesTrend(): Promise<Array<SalesTrend>>;
     getNearExpiryAlerts(): Promise<Array<Medicine>>;
     getSales(): Promise<Array<Sale>>;
     getSuppliers(): Promise<Array<Supplier>>;
@@ -159,7 +163,7 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     recordSale(medicineId: bigint, quantity: bigint, patientName: string, saleDate: string): Promise<Sale | null>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    updateMedicine(id: bigint, name: string, category: string, dosage: string, quantity: bigint, supplierId: bigint, unitPrice: number, expiryDate: string, isNearExpiry: boolean): Promise<Medicine | null>;
+    updateMedicine(id: bigint, name: string, category: string, dosage: string, quantity: bigint, supplierId: bigint, purchasePrice: number, salePrice: number, expiryDate: string, isNearExpiry: boolean): Promise<Medicine | null>;
     updateSupplier(id: bigint, name: string, contact: string): Promise<Supplier | null>;
 }
 import type { Medicine as _Medicine, Sale as _Sale, Supplier as _Supplier, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
@@ -179,17 +183,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async addMedicine(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: bigint, arg5: number, arg6: string, arg7: boolean): Promise<Medicine> {
+    async addMedicine(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: bigint, arg5: number, arg6: number, arg7: string, arg8: boolean): Promise<Medicine> {
         if (this.processError) {
             try {
-                const result = await this.actor.addMedicine(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                const result = await this.actor.addMedicine(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.addMedicine(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            const result = await this.actor.addMedicine(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
             return result;
         }
     }
@@ -249,11 +253,7 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getAnalyticsSummary(): Promise<{
-        totalSales: bigint;
-        totalMedicines: bigint;
-        totalRevenue: number;
-    }> {
+    async getAnalyticsSummary(): Promise<AnalyticsSummary> {
         if (this.processError) {
             try {
                 const result = await this.actor.getAnalyticsSummary();
@@ -295,12 +295,7 @@ export class Backend implements backendInterface {
             return from_candid_UserRole_n4(this._uploadFile, this._downloadFile, result);
         }
     }
-    async getCategoryDemand(): Promise<Array<{
-        feb: bigint;
-        jan: bigint;
-        mar: bigint;
-        category: string;
-    }>> {
+    async getCategoryDemand(): Promise<Array<CategoryDemand>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCategoryDemand();
@@ -328,11 +323,7 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getMonthlySalesTrend(): Promise<Array<{
-        month: string;
-        totalSales: bigint;
-        totalRevenue: number;
-    }>> {
+    async getMonthlySalesTrend(): Promise<Array<SalesTrend>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getMonthlySalesTrend();
@@ -458,17 +449,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async updateMedicine(arg0: bigint, arg1: string, arg2: string, arg3: string, arg4: bigint, arg5: bigint, arg6: number, arg7: string, arg8: boolean): Promise<Medicine | null> {
+    async updateMedicine(arg0: bigint, arg1: string, arg2: string, arg3: string, arg4: bigint, arg5: bigint, arg6: number, arg7: number, arg8: string, arg9: boolean): Promise<Medicine | null> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateMedicine(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                const result = await this.actor.updateMedicine(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
                 return from_candid_opt_n7(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateMedicine(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+            const result = await this.actor.updateMedicine(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
             return from_candid_opt_n7(this._uploadFile, this._downloadFile, result);
         }
     }

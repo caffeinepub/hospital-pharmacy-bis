@@ -153,7 +153,8 @@ export function useAddMedicine() {
       dosage: string;
       quantity: bigint;
       supplierId: bigint;
-      unitPrice: number;
+      purchasePrice: number;
+      salePrice: number;
       expiryDate: string;
       isNearExpiry: boolean;
     }) => {
@@ -164,7 +165,8 @@ export function useAddMedicine() {
         data.dosage,
         data.quantity,
         data.supplierId,
-        data.unitPrice,
+        data.purchasePrice,
+        data.salePrice,
         data.expiryDate,
         data.isNearExpiry,
       );
@@ -188,7 +190,8 @@ export function useUpdateMedicine() {
       dosage: string;
       quantity: bigint;
       supplierId: bigint;
-      unitPrice: number;
+      purchasePrice: number;
+      salePrice: number;
       expiryDate: string;
       isNearExpiry: boolean;
     }) => {
@@ -200,7 +203,8 @@ export function useUpdateMedicine() {
         data.dosage,
         data.quantity,
         data.supplierId,
-        data.unitPrice,
+        data.purchasePrice,
+        data.salePrice,
         data.expiryDate,
         data.isNearExpiry,
       );
@@ -290,6 +294,7 @@ export function useRecordSale() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sales });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.medicines });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.analyticsSummary });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthlySalesTrend });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.categoryDemand });
