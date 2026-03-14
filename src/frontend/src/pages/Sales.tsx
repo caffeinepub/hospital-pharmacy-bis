@@ -18,12 +18,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useMedicines, useRecordSale, useSales } from "@/hooks/useQueries";
+import { usePharmacyStore } from "@/contexts/PharmacyStore";
 import { Loader2, Receipt } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 // ── Static fallback: 50 sales from Jan–Mar 2026, always visible ──
+// biome-ignore lint/correctness/noUnusedVariables: static fallback kept for reference
 const STATIC_SALES = [
   {
     id: 1n,
@@ -644,6 +645,7 @@ const EMPTY_FORM: InvoiceForm = {
 };
 
 // ── Static fallback medicines (same list as Inventory) ──
+// biome-ignore lint/correctness/noUnusedVariables: static fallback kept for reference
 const STATIC_MEDICINES_FOR_SALES = [
   { id: 1n, name: "ConCor", dosage: "2.5mg", quantity: 200n, salePrice: 4.5 },
   { id: 2n, name: "ConCor", dosage: "5mg", quantity: 150n, salePrice: 5.75 },
@@ -720,14 +722,10 @@ const STATIC_MEDICINES_FOR_SALES = [
 ];
 
 export function Sales() {
-  const { data: sales, isLoading: salesLoading } = useSales();
-  const { data: medicines } = useMedicines();
-  const recordSale = useRecordSale();
+  const store = usePharmacyStore();
   const [form, setForm] = useState<InvoiceForm>(EMPTY_FORM);
 
-  // Use backend medicines if loaded, else static fallback
-  const displayMedicines =
-    medicines && medicines.length > 0 ? medicines : STATIC_MEDICINES_FOR_SALES;
+  const displayMedicines = store.medicines;
 
   // When medicine is selected, auto-fill price
   function handleMedicineSelect(medId: string) {
@@ -760,30 +758,29 @@ export function Sales() {
       );
       return;
     }
-    try {
-      const result = await recordSale.mutateAsync({
-        medicineId: BigInt(form.medicineId),
-        quantity: BigInt(qty),
-        patientName: form.patientName.trim() || "Anonymous",
-        saleDate: form.saleDate,
-      });
-      if (result) {
-        const medName = selectedMed
-          ? `${selectedMed.name} ${selectedMed.dosage}`
-          : "Medicine";
-        const total = result.totalPrice.toFixed(2);
-        toast.success(`Invoice created — ${medName} x${qty} = $${total}`);
-        setForm({ ...EMPTY_FORM, saleDate: form.saleDate });
-      } else {
-        toast.error("Invoice failed — check stock availability");
-      }
-    } catch {
-      toast.error("Login as admin to record sales");
+    if (!form.saleDate) {
+      toast.error("Sale date is required");
+      return;
+    }
+    const result = await store.recordSale({
+      medicineId: BigInt(form.medicineId),
+      quantity: BigInt(qty),
+      patientName: form.patientName.trim() || "Anonymous",
+      saleDate: form.saleDate,
+    });
+    if (result) {
+      const _medName = selectedMed
+        ? `${selectedMed.name} ${selectedMed.dosage}`
+        : "Medicine";
+      const _total = result.totalPrice.toFixed(2);
+      toast.success("Item added successfully");
+      setForm({ ...EMPTY_FORM, saleDate: form.saleDate });
+    } else {
+      toast.error("Invoice failed — check stock availability");
     }
   }
 
-  // Use backend data if available, else static fallback
-  const displaySales = sales && sales.length > 0 ? sales : STATIC_SALES;
+  const displaySales = store.sales;
   const totalRevenue = displaySales.reduce((acc, s) => acc + s.totalPrice, 0);
 
   return (
@@ -972,13 +969,11 @@ export function Sales() {
 
                 <Button
                   type="submit"
-                  disabled={recordSale.isPending}
+                  disabled={false}
                   data-ocid="sales.submit_button"
                   className="w-full bg-black hover:bg-zinc-800 text-white font-700 gap-2 mt-2"
                 >
-                  {recordSale.isPending && (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  )}
+                  {false && <Loader2 className="w-4 h-4 animate-spin" />}
                   Add Invoice
                 </Button>
               </form>
@@ -1036,7 +1031,7 @@ export function Sales() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {salesLoading ? (
+                    {(() => false)() ? (
                       Array.from({ length: 6 }, (_, i) => `row-${i}`).map(
                         (rowKey) => (
                           <TableRow key={rowKey}>

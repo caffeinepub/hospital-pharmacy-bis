@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePharmacyStore } from "@/contexts/PharmacyStore";
 import {
   useAnalyticsSummary,
   useCategoryDemand,
@@ -193,6 +194,7 @@ export function Dashboard() {
 
   // ── KPI values ──
   const mult = FILTER_MULTIPLIERS[dateFilter];
+  const pharmacyStore = usePharmacyStore();
   const backendTotalMedicines = Number(summary?.totalMedicines ?? 0);
   const backendTotalSales = Number(summary?.totalSales ?? 0);
   const backendTotalRevenue = summary?.totalRevenue ?? 0;
@@ -201,9 +203,16 @@ export function Dashboard() {
     backendTotalMedicines === 0 &&
     backendTotalSales === 0 &&
     Number(backendTotalRevenue) === 0;
-  const baseMedicines = useStaticKpis ? 24 : backendTotalMedicines;
-  const baseSales = useStaticKpis ? 50 : backendTotalSales;
-  const baseRevenue = useStaticKpis ? 1000.3 : Number(backendTotalRevenue);
+  // Prefer live store data over static fallback
+  const baseMedicines = useStaticKpis
+    ? pharmacyStore.totalMedicines
+    : backendTotalMedicines;
+  const baseSales = useStaticKpis
+    ? pharmacyStore.totalSales
+    : backendTotalSales;
+  const baseRevenue = useStaticKpis
+    ? pharmacyStore.totalRevenue
+    : Number(backendTotalRevenue);
 
   const kpiTotalMedicines = baseMedicines;
   const kpiTotalSales = Math.round(baseSales * mult);

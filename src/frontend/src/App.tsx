@@ -9,6 +9,7 @@ import {
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Layout } from "./components/layout/Layout";
+import { PharmacyStoreProvider } from "./contexts/PharmacyStore";
 import { useActor } from "./hooks/useActor";
 import { Dashboard } from "./pages/Dashboard";
 import { Inventory } from "./pages/Inventory";
@@ -16,7 +17,7 @@ import { Reports } from "./pages/Reports";
 import { Sales } from "./pages/Sales";
 import { Suppliers } from "./pages/Suppliers";
 
-// ─── Loading screen while initializing ───────────────────────────────────────────
+// ─── Loading screen while initializing ────────────────────────────────────────────────
 function InitScreen({ status }: { status: "loading" | "error" | "done" }) {
   if (status === "done") return null;
   return (
@@ -51,7 +52,7 @@ function InitScreen({ status }: { status: "loading" | "error" | "done" }) {
   );
 }
 
-// ─── Root component with init logic ───────────────────────────────────────────
+// ─── Root component with init logic ─────────────────────────────────────────────────
 function Root() {
   const { actor, isFetching } = useActor();
   const [initStatus, setInitStatus] = useState<"loading" | "error" | "done">(
@@ -59,7 +60,14 @@ function Root() {
   );
 
   useEffect(() => {
-    if (!actor || isFetching) return;
+    // If still fetching, wait
+    if (isFetching) return;
+
+    // No actor (unauthenticated) — show app immediately with local data
+    if (!actor) {
+      setInitStatus("done");
+      return;
+    }
 
     let cancelled = false;
     (async () => {
@@ -85,7 +93,7 @@ function Root() {
   );
 }
 
-// ─── Routes ────────────────────────────────────────────────────────────────────
+// ─── Routes ───────────────────────────────────────────────────────────────────────────
 const rootRoute = createRootRoute({ component: Root });
 
 const layoutRoute = createRoute({
@@ -142,10 +150,10 @@ declare module "@tanstack/react-router" {
   }
 }
 
-// ─── App ──────────────────────────────────────────────────────────────────────
+// ─── App ──────────────────────────────────────────────────────────────────────────────
 export default function App() {
   return (
-    <>
+    <PharmacyStoreProvider>
       <RouterProvider router={router} />
       <Toaster
         position="top-right"
@@ -159,6 +167,6 @@ export default function App() {
           },
         }}
       />
-    </>
+    </PharmacyStoreProvider>
   );
 }

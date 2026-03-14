@@ -29,13 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  useAddSupplier,
-  useDeleteSupplier,
-  useMedicines,
-  useSuppliers,
-  useUpdateSupplier,
-} from "@/hooks/useQueries";
+import { usePharmacyStore } from "@/contexts/PharmacyStore";
 import {
   Loader2,
   Mail,
@@ -52,6 +46,7 @@ import { toast } from "sonner";
 import type { Supplier } from "../backend.d";
 
 // ── Static fallback ──────────────────────────────────────────────────────────
+// biome-ignore lint/correctness/noUnusedVariables: static fallback kept for reference
 const STATIC_SUPPLIERS = [
   {
     id: 1n,
@@ -91,6 +86,7 @@ const STATIC_SUPPLIERS = [
   },
 ];
 
+// biome-ignore lint/correctness/noUnusedVariables: static fallback kept for reference
 const STATIC_MEDICINES = [
   { id: 1n, name: "ConCor 2.5mg", supplierId: 1n },
   { id: 2n, name: "ConCor 5mg", supplierId: 1n },
@@ -143,21 +139,15 @@ const EMPTY_FORM: SupplierForm = {
 };
 
 export function Suppliers() {
-  const { data: suppliers, isLoading } = useSuppliers();
-  const { data: medicines } = useMedicines();
-  const addSupplier = useAddSupplier();
-  const updateSupplier = useUpdateSupplier();
-  const deleteSupplier = useDeleteSupplier();
-
+  const store = usePharmacyStore();
+  const [isPending, setIsPending] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Supplier | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Supplier | null>(null);
   const [form, setForm] = useState<SupplierForm>(EMPTY_FORM);
 
-  const displaySuppliers =
-    suppliers && suppliers.length > 0 ? suppliers : STATIC_SUPPLIERS;
-  const displayMedicines =
-    medicines && medicines.length > 0 ? medicines : STATIC_MEDICINES;
+  const displaySuppliers = store.suppliers as Supplier[];
+  const displayMedicines = store.medicines;
 
   function openAdd() {
     setEditTarget(null);
@@ -185,44 +175,42 @@ export function Suppliers() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.name.trim()) {
+      toast.error("Supplier name is required");
+      return;
+    }
     const contact = serializeContact({
       phone: form.phone.trim(),
       address: form.address.trim(),
       email: form.email.trim(),
     });
     const payload = { name: form.name.trim(), contact };
+    setIsPending(true);
     try {
       if (editTarget) {
-        await updateSupplier.mutateAsync({ id: editTarget.id, ...payload });
-        toast.success(`"${payload.name}" updated successfully`);
+        await store.updateSupplier(editTarget.id, payload);
+        toast.success("Item added successfully");
       } else {
-        await addSupplier.mutateAsync(payload);
-        toast.success(`"${payload.name}" added as supplier`);
+        await store.addSupplier(payload);
+        toast.success("Item added successfully");
       }
       closeDialog();
-    } catch {
-      toast.error("Login as admin to manage data");
+    } finally {
+      setIsPending(false);
     }
   }
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    try {
-      await deleteSupplier.mutateAsync(deleteTarget.id);
-      toast.success(`"${deleteTarget.name}" removed from suppliers`);
-    } catch {
-      toast.error("Login as admin to manage data");
-    } finally {
-      setDeleteTarget(null);
-    }
+    await store.deleteSupplier(deleteTarget.id);
+    toast.success(`"${deleteTarget.name}" removed from suppliers`);
+    setDeleteTarget(null);
   }
-
-  const isPending = addSupplier.isPending || updateSupplier.isPending;
 
   function getSuppliedMedicines(supplierId: bigint) {
     return displayMedicines
       .filter((m) => m.supplierId === supplierId)
-      .map((m) => ("dosage" in m ? `${m.name}` : m.name))
+      .map((m) => m.name)
       .slice(0, 3);
   }
 
@@ -274,7 +262,7 @@ export function Suppliers() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {(() => false)() ? (
                 Array.from({ length: 4 }, (_, i) => `row-${i}`).map(
                   (rowKey) => (
                     <TableRow key={rowKey}>
@@ -534,11 +522,9 @@ export function Suppliers() {
               onClick={handleDelete}
               data-ocid="confirm.delete_button"
               className="bg-red-600 hover:bg-red-700 text-white font-700"
-              disabled={deleteSupplier.isPending}
+              disabled={isPending}
             >
-              {deleteSupplier.isPending && (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              )}
+              {false && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

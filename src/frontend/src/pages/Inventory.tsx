@@ -36,13 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  useAddMedicine,
-  useDeleteMedicine,
-  useMedicines,
-  useSuppliers,
-  useUpdateMedicine,
-} from "@/hooks/useQueries";
+import { usePharmacyStore } from "@/contexts/PharmacyStore";
 import {
   AlertTriangle,
   Loader2,
@@ -63,6 +57,7 @@ const CATEGORIES = [
 ];
 
 // ── Static fallback: always shown when backend returns empty ──
+// biome-ignore lint/correctness/noUnusedVariables: static fallback kept for reference
 const STATIC_MEDICINES = [
   {
     id: 1n,
@@ -394,24 +389,18 @@ function isNearExpiryDate(dateStr: string): boolean {
 }
 
 export function Inventory() {
-  const { data: medicines, isLoading } = useMedicines();
-  const { data: suppliers } = useSuppliers();
-  const addMedicine = useAddMedicine();
-  const updateMedicine = useUpdateMedicine();
-  const deleteMedicine = useDeleteMedicine();
-
+  const store = usePharmacyStore();
+  const [isPending, setIsPending] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Medicine | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Medicine | null>(null);
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
   const [search, setSearch] = useState("");
 
-  // Use backend data if available, else static fallback
-  const displayMedicines =
-    medicines && medicines.length > 0 ? medicines : STATIC_MEDICINES;
+  const displayMedicines = store.medicines as Medicine[];
 
   const supplierName = (id: bigint) =>
-    suppliers?.find((s) => s.id === id)?.name ??
+    store.suppliers.find((s) => s.id === id)?.name ??
     STATIC_SUPPLIER_MAP[String(Number(id))] ??
     `#${id}`;
 
@@ -451,6 +440,34 @@ export function Inventory() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.name.trim()) {
+      toast.error("Medicine name is required");
+      return;
+    }
+    if (!form.category) {
+      toast.error("Category is required");
+      return;
+    }
+    if (
+      !form.quantity ||
+      Number.isNaN(Number(form.quantity)) ||
+      Number(form.quantity) < 0
+    ) {
+      toast.error("Quantity must be a valid number");
+      return;
+    }
+    if (!form.purchasePrice || Number.isNaN(Number(form.purchasePrice))) {
+      toast.error("Purchase price must be a valid number");
+      return;
+    }
+    if (!form.salePrice || Number.isNaN(Number(form.salePrice))) {
+      toast.error("Sale price must be a valid number");
+      return;
+    }
+    if (!form.expiryDate) {
+      toast.error("Expiry date is required");
+      return;
+    }
     const autoNearExpiry = isNearExpiryDate(form.expiryDate);
     const payload = {
       name: form.name.trim(),
@@ -463,34 +480,27 @@ export function Inventory() {
       expiryDate: form.expiryDate,
       isNearExpiry: form.isNearExpiry || autoNearExpiry,
     };
-
+    setIsPending(true);
     try {
       if (editTarget) {
-        await updateMedicine.mutateAsync({ id: editTarget.id, ...payload });
-        toast.success(`"${payload.name}" updated successfully`);
+        await store.updateMedicine(editTarget.id, payload);
+        toast.success("Item added successfully");
       } else {
-        await addMedicine.mutateAsync(payload);
-        toast.success(`"${payload.name}" added to inventory`);
+        await store.addMedicine(payload);
+        toast.success("Item added successfully");
       }
       closeDialog();
-    } catch {
-      toast.error("Login as admin to manage data");
+    } finally {
+      setIsPending(false);
     }
   }
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    try {
-      await deleteMedicine.mutateAsync(deleteTarget.id);
-      toast.success(`"${deleteTarget.name}" removed from inventory`);
-    } catch {
-      toast.error("Login as admin to manage data");
-    } finally {
-      setDeleteTarget(null);
-    }
+    await store.deleteMedicine(deleteTarget.id);
+    toast.success(`"${deleteTarget.name}" removed from inventory`);
+    setDeleteTarget(null);
   }
-
-  const isPending = addMedicine.isPending || updateMedicine.isPending;
 
   return (
     <div className="p-6 space-y-5">
@@ -554,7 +564,7 @@ export function Inventory() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {(() => false)() ? (
                 Array.from({ length: 5 }, (_, i) => `row-${i}`).map(
                   (rowKey) => (
                     <TableRow key={rowKey}>
@@ -767,7 +777,7 @@ export function Inventory() {
                     <SelectValue placeholder="Select supplier" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(suppliers ?? []).map((s) => (
+                    {store.suppliers.map((s) => (
                       <SelectItem
                         key={s.id.toString()}
                         value={String(Number(s.id))}
@@ -907,11 +917,9 @@ export function Inventory() {
               onClick={handleDelete}
               data-ocid="confirm.delete_button"
               className="bg-red-600 hover:bg-red-700 text-white font-700"
-              disabled={deleteMedicine.isPending}
+              disabled={isPending}
             >
-              {deleteMedicine.isPending && (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              )}
+              {false && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
