@@ -1,42 +1,48 @@
-# Hospital Pharmacy BIS — Final Production Build
+# Hospital Pharmacy BIS
 
 ## Current State
-- Backend `initializeData()` is admin-only, so data is never seeded for unauthenticated users
-- Backend seeds generic placeholder names ("Medicine 1", "Supplier 1") and wrong dates ("2024-06-01")
-- `getCategoryDemand()` does not parse month from `saleDate`; all sales go to `jan` bucket regardless
-- `getMonthlySalesTrend()` groups by full saleDate string, not by month label
-- Frontend tables (Inventory, Sales, Suppliers) show empty state because backend returns empty arrays
-- Dashboard charts use static fallback data but tables are blank
-- No static fallback data exists in the table pages themselves
+
+Full-stack pharmacy management system with:
+- React + TypeScript frontend, Motoko backend
+- AuthContext with email/password login (admin@pharmacy.com / admin123 default)
+- PharmacyStore context with Medicines, Suppliers, Sales state and static seed data
+- Pages: LoginPage, Dashboard, Inventory (Medicines), Suppliers, Sales, Reports, Alerts
+- Sidebar navigation, responsive layout
+- Duplicate validation for medicines and suppliers
+- Sales form with medicine dropdown, stock validation, stock reduction on save
+- Charts (bar, line) for analytics
+- KPI cards, AI Insights, near-expiry alerts
 
 ## Requested Changes (Diff)
 
 ### Add
-- Backend: `initializeData()` is now a **public** function (no auth gate) that self-seeds on first call using an `initialized` flag
-- Backend: Real 24-medicine inventory with correct names, categories, dosages, prices, supplier IDs
-- Backend: 4 real suppliers: Ibn Sina, Pharma Overseas, United Pharma, Al-Ezaby
-- Backend: 50 real sales records spread across Jan 2026, Feb 2026, and Mar 2026 with realistic dates
-- Backend: Augmentin 1g and ConCor 5mg flagged `isNearExpiry = true` with expiry dates within 30 days of today
-- Backend: Fix `getCategoryDemand()` to parse month from `saleDate` (format "YYYY-MM-DD") correctly for jan/feb/mar buckets
-- Backend: Fix `getMonthlySalesTrend()` to extract "Jan 2026"/"Feb 2026"/"Mar 2026" month labels from saleDate
-- Frontend: Static hardcoded fallback arrays in Inventory, Sales, and Suppliers pages that render IMMEDIATELY before the backend query resolves — ensuring tables are NEVER empty on load
-- Frontend: Merge logic: show static data if backend returns 0 items, otherwise show backend data
+- Ensure dashboard metrics (revenue, sales count, stock levels) auto-update after every CRUD operation
+- Ensure top-selling medicines chart auto-updates after every sale/edit/delete
+- Ensure sales and revenue analytics charts update in real-time after any operation
+- Success toast messages: "Item added/edited successfully", "Medicine added successfully", etc.
+- Edit invoice functionality in Sales page
 
 ### Modify
-- Backend: `initializeData()` — remove admin auth requirement, add idempotency guard (`initialized` flag)
-- Frontend: `Inventory.tsx` — add `STATIC_MEDICINES` array of 24 items; display them when `medicines` is empty/loading
-- Frontend: `Sales.tsx` — add `STATIC_SALES` array of 50 items; display them when `sales` is empty/loading
-- Frontend: `Suppliers.tsx` — add `STATIC_SUPPLIERS` array of 4 items; display them when `suppliers` is empty/loading
-- Frontend: `App.tsx` — call `initializeData()` without requiring admin (will succeed for any caller now)
+- Login page: use email + password fields (not username), validate against Users table, show "Invalid email or password" on failure
+- AuthContext: seed default admin (admin@pharmacy.com / admin123) if Users table is empty; store current user role
+- Admin-only: Add/Edit/Delete buttons for medicines, suppliers, invoices only visible/functional when role === 'admin'
+- Non-admin users: view-only dashboard, no CRUD controls visible
+- Medicines form: fields = Medicine Name, Category, Quantity, Price, Expiry Date, Supplier; duplicate check case-insensitive
+- Sales form: medicine dropdown loads from PharmacyStore medicines with stock; auto-fill price; validate qty <= stock; total = qty * price; reduce stock on save; no DOM/insertBefore errors
+- All CRUD handlers must call PharmacyStore update functions that trigger React state re-renders so all derived analytics recalculate automatically
+- Remove any direct DOM manipulation (insertBefore, innerHTML, etc.) -- use React state only
 
 ### Remove
-- Backend: Admin-only guard on `initializeData()`
-- Backend: Placeholder data ("Medicine N", "Category A/B/C", "Supplier N")
+- Any direct DOM manipulation code (insertBefore, etc.)
+- Any hardcoded analytics that don't reactively update from state
 
 ## Implementation Plan
-1. Rewrite `main.mo`: fix `initializeData` to be public with idempotency flag, inject all 24 real medicines, 4 real suppliers, 50 realistic sales records (Jan–Mar 2026), fix analytics aggregation functions
-2. Rewrite `Inventory.tsx`: add 24-medicine static fallback array; use it when backend returns empty
-3. Rewrite `Sales.tsx`: add 50-sale static fallback array; use it when backend returns empty; show total revenue from static data
-4. Rewrite `Suppliers.tsx`: add 4-supplier static fallback; use it when backend returns empty
-5. Keep `Dashboard.tsx` static fallback as-is (already working)
-6. Validate and deploy
+
+1. **AuthContext**: Ensure Users table has default admin seed; expose currentUser with role; protect routes -- redirect to /login if not authenticated
+2. **PharmacyStore**: Ensure all state updates trigger re-renders; derived analytics (totalRevenue, totalSales, topSelling, stockLevels) computed from state reactively; expose addSale, updateMedicine, deleteMedicine, addMedicine, addSupplier, updateSupplier, deleteSupplier, addInvoice, updateInvoice with proper duplicate checks
+3. **LoginPage**: email + password fields; validate against Users; show error on fail; redirect on success
+4. **Inventory (Medicines)**: Add/Edit/Delete with all fields (Name, Category, Quantity, Price, Expiry Date, Supplier); admin-only controls; duplicate check; success/error messages via toast
+5. **Suppliers**: Add/Edit/Delete; admin-only; duplicate check; success/error toasts
+6. **Sales**: Add/Edit invoices; medicine dropdown from store; auto-fill price + stock display; qty validation; total auto-calc; stock reduction on save; success/error toasts; no DOM errors
+7. **Dashboard**: All KPIs and charts derived from PharmacyStore state -- auto-update on any change; date filter works on derived data
+8. **General**: Remove all direct DOM manipulation; use React state/derived values exclusively; add `data-ocid` markers to all interactive surfaces

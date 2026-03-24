@@ -1,26 +1,14 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -29,355 +17,214 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { usePharmacyStore } from "@/contexts/PharmacyStore";
-import {
-  Loader2,
-  Mail,
-  MapPin,
-  Pencil,
-  Phone,
-  Pill,
-  Plus,
-  Trash2,
-  Truck,
-} from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { Supplier } from "../backend.d";
+import { useAuth } from "../contexts/AuthContext";
+import { type Supplier, usePharmacy } from "../contexts/PharmacyStore";
 
-// ── Static fallback ──────────────────────────────────────────────────────────
-// biome-ignore lint/correctness/noUnusedVariables: static fallback kept for reference
-const STATIC_SUPPLIERS = [
-  {
-    id: 1n,
-    name: "Ibn Sina",
-    contact: JSON.stringify({
-      phone: "+20-2-2345-6789",
-      address: "Cairo, Egypt",
-      email: "ibnsina@pharma.eg",
-    }),
-  },
-  {
-    id: 2n,
-    name: "Pharma Overseas",
-    contact: JSON.stringify({
-      phone: "+44-20-7946-0958",
-      address: "London, UK",
-      email: "overseas@pharmaint.co.uk",
-    }),
-  },
-  {
-    id: 3n,
-    name: "United Pharma",
-    contact: JSON.stringify({
-      phone: "+20-2-3456-7890",
-      address: "Alexandria, Egypt",
-      email: "info@unitedpharma.eg",
-    }),
-  },
-  {
-    id: 4n,
-    name: "Al-Ezaby",
-    contact: JSON.stringify({
-      phone: "+20-2-4567-8901",
-      address: "Giza, Egypt",
-      email: "supply@alezaby.com",
-    }),
-  },
-];
-
-// biome-ignore lint/correctness/noUnusedVariables: static fallback kept for reference
-const STATIC_MEDICINES = [
-  { id: 1n, name: "ConCor 2.5mg", supplierId: 1n },
-  { id: 2n, name: "ConCor 5mg", supplierId: 1n },
-  { id: 3n, name: "ErastaPex", supplierId: 2n },
-  { id: 4n, name: "Augmentin 1g", supplierId: 3n },
-  { id: 5n, name: "Glucophage", supplierId: 2n },
-  { id: 6n, name: "Nexium", supplierId: 4n },
-];
-
-// ── Contact parsing/serialisation ─────────────────────────────────────────
-interface ContactData {
-  phone: string;
-  address: string;
-  email: string;
-}
-
-function parseContact(raw: string): ContactData {
-  try {
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === "object") {
-      return {
-        phone: parsed.phone ?? "",
-        address: parsed.address ?? "",
-        email: parsed.email ?? "",
-      };
-    }
-  } catch {
-    // legacy plain text — best-effort parse
-  }
-  return { phone: raw, address: "", email: "" };
-}
-
-function serializeContact(data: ContactData): string {
-  return JSON.stringify(data);
-}
-
-// ── Types ─────────────────────────────────────────────────────────────────
-interface SupplierForm {
-  name: string;
-  phone: string;
-  address: string;
-  email: string;
-}
-
-const EMPTY_FORM: SupplierForm = {
+const EMPTY_FORM = {
   name: "",
-  phone: "",
-  address: "",
+  contact: "",
   email: "",
+  suppliedMedicinesText: "",
 };
 
 export function Suppliers() {
-  const store = usePharmacyStore();
-  const [isPending, setIsPending] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<Supplier | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Supplier | null>(null);
-  const [form, setForm] = useState<SupplierForm>(EMPTY_FORM);
+  const { suppliers, addSupplier, updateSupplier, deleteSupplier } =
+    usePharmacy();
+  const { isAdmin } = useAuth();
 
-  const displaySuppliers = store.suppliers as Supplier[];
-  const displayMedicines = store.medicines;
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState("");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const filtered = suppliers.filter(
+    (s) =>
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.email.toLowerCase().includes(search.toLowerCase()),
+  );
 
   function openAdd() {
-    setEditTarget(null);
+    setEditId(null);
     setForm(EMPTY_FORM);
+    setFormError("");
     setDialogOpen(true);
   }
 
   function openEdit(s: Supplier) {
-    setEditTarget(s);
-    const c = parseContact(s.contact);
+    setEditId(s.id);
     setForm({
       name: s.name,
-      phone: c.phone,
-      address: c.address,
-      email: c.email,
+      contact: s.contact,
+      email: s.email,
+      suppliedMedicinesText: s.suppliedMedicines.join(", "),
     });
+    setFormError("");
     setDialogOpen(true);
   }
 
-  function closeDialog() {
-    setDialogOpen(false);
-    setEditTarget(null);
-    setForm(EMPTY_FORM);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.name.trim()) {
-      toast.error("Supplier name is required");
+  function handleSave() {
+    const { name, contact, email, suppliedMedicinesText } = form;
+    if (!name.trim() || !contact.trim() || !email.trim()) {
+      setFormError("Name, contact, and email are required.");
       return;
     }
-    const contact = serializeContact({
-      phone: form.phone.trim(),
-      address: form.address.trim(),
-      email: form.email.trim(),
-    });
-    const payload = { name: form.name.trim(), contact };
-    setIsPending(true);
-    try {
-      if (editTarget) {
-        await store.updateSupplier(editTarget.id, payload);
-        toast.success("Item added successfully");
-      } else {
-        await store.addSupplier(payload);
-        toast.success("Item added successfully");
+    const suppliedMedicines = suppliedMedicinesText
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (editId) {
+      updateSupplier(editId, {
+        name: name.trim(),
+        contact,
+        email,
+        suppliedMedicines,
+      });
+      toast.success("Supplier updated successfully");
+    } else {
+      const error = addSupplier({
+        name: name.trim(),
+        contact,
+        email,
+        suppliedMedicines,
+      });
+      if (error) {
+        setFormError(error);
+        return;
       }
-      closeDialog();
-    } finally {
-      setIsPending(false);
+      toast.success("Supplier added successfully");
     }
+    setDialogOpen(false);
   }
 
-  async function handleDelete() {
-    if (!deleteTarget) return;
-    await store.deleteSupplier(deleteTarget.id);
-    toast.success(`"${deleteTarget.name}" removed from suppliers`);
-    setDeleteTarget(null);
-  }
-
-  function getSuppliedMedicines(supplierId: bigint) {
-    return displayMedicines
-      .filter((m) => m.supplierId === supplierId)
-      .map((m) => m.name)
-      .slice(0, 3);
+  function handleDelete(id: string) {
+    deleteSupplier(id);
+    setDeleteConfirmId(null);
+    toast.success("Supplier deleted successfully");
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div className="p-4 md:p-6 space-y-5 md:ml-0 ml-12">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-display font-800 text-black tracking-tight flex items-center gap-2">
-            <Truck className="w-6 h-6 text-black" />
-            Supplier Management
+          <h1 className="text-2xl font-bold text-black font-display">
+            Suppliers
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5 font-medium">
-            {displaySuppliers.length} active suppliers
+          <p className="text-sm text-gray-500 font-semibold">
+            {suppliers.length} suppliers
           </p>
         </div>
-        <Button
-          onClick={openAdd}
-          data-ocid="suppliers.add_button"
-          className="bg-black hover:bg-zinc-800 text-white font-700 text-[13px] gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Supplier
-        </Button>
+        {isAdmin && (
+          <Button
+            onClick={openAdd}
+            className="bg-black text-white hover:bg-gray-900 font-bold"
+            data-ocid="suppliers.add_supplier.button"
+          >
+            <Plus className="w-4 h-4 mr-2" /> Add Supplier
+          </Button>
+        )}
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+      <Input
+        placeholder="Search suppliers…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="max-w-sm border-gray-300 text-black font-semibold"
+        data-ocid="suppliers.search_input"
+      />
+
+      <div className="border border-gray-200 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
-          <Table data-ocid="suppliers.table">
+          <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50 border-b border-slate-200">
-                {[
-                  "#",
-                  "Supplier Name",
-                  "Phone",
-                  "Email",
-                  "Address",
-                  "Supplied Medicines",
-                  "Actions",
-                ].map((h) => (
-                  <TableHead
-                    key={h}
-                    className="py-3 px-4 text-left text-[11px] font-800 text-slate-500 uppercase tracking-wider whitespace-nowrap"
-                  >
-                    {h}
+              <TableRow className="bg-gray-50">
+                <TableHead className="font-bold text-black text-xs uppercase tracking-wide">
+                  Name
+                </TableHead>
+                <TableHead className="font-bold text-black text-xs uppercase tracking-wide">
+                  Contact
+                </TableHead>
+                <TableHead className="font-bold text-black text-xs uppercase tracking-wide">
+                  Email
+                </TableHead>
+                <TableHead className="font-bold text-black text-xs uppercase tracking-wide">
+                  Supplied Medicines
+                </TableHead>
+                {isAdmin && (
+                  <TableHead className="font-bold text-black text-xs uppercase tracking-wide">
+                    Actions
                   </TableHead>
-                ))}
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(() => false)() ? (
-                Array.from({ length: 4 }, (_, i) => `row-${i}`).map(
-                  (rowKey) => (
-                    <TableRow key={rowKey}>
-                      {Array.from({ length: 7 }, (_, j) => `cell-${j}`).map(
-                        (cellKey) => (
-                          <TableCell key={cellKey}>
-                            <Skeleton className="h-4 w-full" />
-                          </TableCell>
-                        ),
-                      )}
-                    </TableRow>
-                  ),
-                )
-              ) : displaySuppliers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-10">
-                    <div
-                      data-ocid="suppliers.empty_state"
-                      className="text-slate-400 font-medium"
-                    >
-                      No suppliers found.
+              {filtered.map((s, i) => (
+                <TableRow
+                  key={s.id}
+                  className="border-b border-gray-100"
+                  data-ocid={`suppliers.supplier.row.${i + 1}`}
+                >
+                  <TableCell className="font-bold text-black">
+                    {s.name}
+                  </TableCell>
+                  <TableCell className="font-semibold text-black">
+                    {s.contact}
+                  </TableCell>
+                  <TableCell className="font-semibold text-black">
+                    {s.email}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {s.suppliedMedicines.map((med) => (
+                        <Badge
+                          key={med}
+                          variant="outline"
+                          className="text-[10px] font-bold text-black border-gray-300 bg-gray-50"
+                        >
+                          {med}
+                        </Badge>
+                      ))}
                     </div>
                   </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(s)}
+                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-black transition-colors"
+                          data-ocid={`suppliers.supplier.edit_button.${i + 1}`}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirmId(s.id)}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
+                          data-ocid={`suppliers.supplier.delete_button.${i + 1}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
-              ) : (
-                displaySuppliers.map((s, idx) => {
-                  const contact = parseContact(s.contact);
-                  const suppliedMeds = getSuppliedMedicines(s.id);
-                  return (
-                    <TableRow
-                      key={s.id.toString()}
-                      data-ocid={`suppliers.item.${idx + 1}`}
-                      className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
-                    >
-                      <TableCell className="py-3 px-4 text-[13px] text-slate-400 font-medium w-10">
-                        {idx + 1}
-                      </TableCell>
-                      <TableCell className="py-3 px-4 font-700 text-black text-[13px] whitespace-nowrap">
-                        {s.name}
-                      </TableCell>
-                      <TableCell className="py-3 px-4 text-[12px] text-slate-600 whitespace-nowrap">
-                        {contact.phone ? (
-                          <span className="flex items-center gap-1">
-                            <Phone className="w-3 h-3 text-slate-400" />
-                            {contact.phone}
-                          </span>
-                        ) : (
-                          <span className="text-slate-300">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-3 px-4 text-[12px] text-slate-600 whitespace-nowrap">
-                        {contact.email ? (
-                          <span className="flex items-center gap-1">
-                            <Mail className="w-3 h-3 text-slate-400" />
-                            {contact.email}
-                          </span>
-                        ) : (
-                          <span className="text-slate-300">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-3 px-4 text-[12px] text-slate-600">
-                        {contact.address ? (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" />
-                            {contact.address}
-                          </span>
-                        ) : (
-                          <span className="text-slate-300">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-3 px-4">
-                        <div className="flex flex-wrap gap-1">
-                          {suppliedMeds.length > 0 ? (
-                            suppliedMeds.map((m) => (
-                              <Badge
-                                key={m}
-                                variant="outline"
-                                className="text-[10px] font-600 border-slate-300 text-black px-1.5 py-0.5 flex items-center gap-0.5"
-                              >
-                                <Pill className="w-2.5 h-2.5" />
-                                {m}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-[12px] text-slate-300">
-                              —
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3 px-4">
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => openEdit(s as Supplier)}
-                            data-ocid={`suppliers.edit_button.${idx + 1}`}
-                            className="p-1.5 rounded-lg hover:bg-zinc-100 text-zinc-700 transition-colors"
-                            title="Edit"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteTarget(s as Supplier)}
-                            data-ocid={`suppliers.delete_button.${idx + 1}`}
-                            className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
+              ))}
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={isAdmin ? 5 : 4}
+                    className="text-center py-8 text-gray-400 font-semibold"
+                    data-ocid="suppliers.empty_state"
+                  >
+                    No suppliers found.
+                  </TableCell>
+                </TableRow>
               )}
             </TableBody>
           </Table>
@@ -385,60 +232,59 @@ export function Suppliers() {
       </div>
 
       {/* Add/Edit Dialog */}
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={(open) => {
-          if (!open) closeDialog();
-        }}
-      >
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          data-ocid="suppliers.dialog"
-          className="max-w-lg bg-white"
-          onInteractOutside={(e) => e.preventDefault()}
+          className="bg-white border-gray-200 max-w-lg"
+          data-ocid="suppliers.supplier.dialog"
         >
           <DialogHeader>
-            <DialogTitle className="text-[16px] font-display font-700 text-black">
-              {editTarget ? "Edit Supplier" : "Add New Supplier"}
+            <DialogTitle className="text-black font-bold">
+              {editId ? "Edit Supplier" : "Add Supplier"}
             </DialogTitle>
-            <DialogDescription className="text-slate-500 text-[13px]">
-              {editTarget
-                ? "Update supplier details."
-                : "Fill in the supplier information."}
-            </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-            <div>
-              <Label className="text-[12px] font-700 text-black mb-1.5 block">
-                Supplier Name *
+
+          <div className="space-y-4 py-2">
+            {formError && (
+              <p
+                className="text-sm font-bold text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"
+                data-ocid="suppliers.supplier.error_state"
+              >
+                {formError}
+              </p>
+            )}
+
+            <div className="space-y-1">
+              <Label className="text-black font-semibold text-sm">
+                Supplier Name
               </Label>
               <Input
-                required
                 value={form.name}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, name: e.target.value }))
                 }
-                placeholder="e.g., Ibn Sina Pharma"
-                data-ocid="suppliers.name.input"
-                className="text-black font-medium text-[13px]"
+                placeholder="e.g. Ibn Sina"
+                className="border-gray-300 text-black"
+                data-ocid="suppliers.supplier.name_input"
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-[12px] font-700 text-black mb-1.5 block">
-                  Phone
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label className="text-black font-semibold text-sm">
+                  Contact Number
                 </Label>
                 <Input
-                  value={form.phone}
+                  value={form.contact}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, phone: e.target.value }))
+                    setForm((f) => ({ ...f, contact: e.target.value }))
                   }
-                  placeholder="+20-2-1234-5678"
-                  data-ocid="suppliers.phone.input"
-                  className="text-black font-medium text-[13px]"
+                  placeholder="01001234567"
+                  className="border-gray-300 text-black"
+                  data-ocid="suppliers.supplier.contact_input"
                 />
               </div>
-              <div>
-                <Label className="text-[12px] font-700 text-black mb-1.5 block">
+              <div className="space-y-1">
+                <Label className="text-black font-semibold text-sm">
                   Email
                 </Label>
                 <Input
@@ -447,89 +293,88 @@ export function Suppliers() {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, email: e.target.value }))
                   }
-                  placeholder="supplier@example.com"
-                  data-ocid="suppliers.email.input"
-                  className="text-black font-medium text-[13px]"
+                  placeholder="supplier@pharma.com"
+                  className="border-gray-300 text-black"
+                  data-ocid="suppliers.supplier.email_input"
                 />
               </div>
             </div>
-            <div>
-              <Label className="text-[12px] font-700 text-black mb-1.5 block">
-                Address
+
+            <div className="space-y-1">
+              <Label className="text-black font-semibold text-sm">
+                Supplied Medicines (comma-separated)
               </Label>
               <Input
-                value={form.address}
+                value={form.suppliedMedicinesText}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, address: e.target.value }))
+                  setForm((f) => ({
+                    ...f,
+                    suppliedMedicinesText: e.target.value,
+                  }))
                 }
-                placeholder="City, Country"
-                data-ocid="suppliers.address.input"
-                className="text-black font-medium text-[13px]"
+                placeholder="Augmentin 1g, Amoxicillin 250mg"
+                className="border-gray-300 text-black"
+                data-ocid="suppliers.supplier.medicines_input"
               />
             </div>
-            <DialogFooter className="mt-4 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closeDialog}
-                data-ocid="suppliers.cancel_button"
-                className="font-700 text-black border-slate-300"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={isPending}
-                data-ocid="suppliers.submit_button"
-                className="bg-black hover:bg-zinc-800 text-white font-700 gap-2"
-              >
-                {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                {editTarget ? "Save Changes" : "Add Supplier"}
-              </Button>
-            </DialogFooter>
-          </form>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              className="border-gray-300 text-black"
+              data-ocid="suppliers.supplier.cancel_button"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              className="bg-black text-white hover:bg-gray-900 font-bold"
+              data-ocid="suppliers.supplier.save_button"
+            >
+              {editId ? "Update Supplier" : "Add Supplier"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirm */}
-      <AlertDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
+      <Dialog
+        open={!!deleteConfirmId}
+        onOpenChange={() => setDeleteConfirmId(null)}
       >
-        <AlertDialogContent className="bg-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-[16px] font-display font-700 text-black">
-              Confirm Delete
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-500 text-[13px] font-medium">
-              Are you sure you want to remove{" "}
-              <span className="font-700 text-black">
-                &quot;{deleteTarget?.name}&quot;
-              </span>{" "}
-              from suppliers?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              data-ocid="confirm.cancel_button"
-              className="font-700 text-black border-slate-300"
+        <DialogContent
+          className="bg-white border-gray-200 max-w-sm"
+          data-ocid="suppliers.supplier.delete_dialog"
+        >
+          <DialogHeader>
+            <DialogTitle className="text-black font-bold">
+              Delete Supplier?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600 font-semibold">
+            This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmId(null)}
+              className="border-gray-300 text-black"
+              data-ocid="suppliers.supplier.delete_cancel_button"
             >
               Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              data-ocid="confirm.delete_button"
-              className="bg-red-600 hover:bg-red-700 text-white font-700"
-              disabled={isPending}
+            </Button>
+            <Button
+              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+              className="bg-red-600 text-white hover:bg-red-700 font-bold"
+              data-ocid="suppliers.supplier.delete_confirm_button"
             >
-              {false && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

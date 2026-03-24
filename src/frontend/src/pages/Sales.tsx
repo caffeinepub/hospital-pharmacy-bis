@@ -1,5 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -9,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -18,1085 +23,447 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { usePharmacyStore } from "@/contexts/PharmacyStore";
-import { Loader2, Receipt } from "lucide-react";
-import { useState } from "react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useAuth } from "../contexts/AuthContext";
+import { type Sale, usePharmacy } from "../contexts/PharmacyStore";
 
-// ── Static fallback: 50 sales from Jan–Mar 2026, always visible ──
-// biome-ignore lint/correctness/noUnusedVariables: static fallback kept for reference
-const STATIC_SALES = [
-  {
-    id: 1n,
-    medicineId: 6n,
-    medicineName: "Augmentin 1g",
-    category: "Antibiotics",
-    quantity: 2n,
-    salePrice: 15.5,
-    totalPrice: 31.0,
-    patientName: "Ahmed Hassan",
-    saleDate: "2026-01-03",
-    purchasePrice: 10.85,
-  },
-  {
-    id: 2n,
-    medicineId: 13n,
-    medicineName: "Glucophage 500mg",
-    category: "Diabetes",
-    quantity: 3n,
-    salePrice: 5.5,
-    totalPrice: 16.5,
-    patientName: "Fatima Ali",
-    saleDate: "2026-01-05",
-    purchasePrice: 3.85,
-  },
-  {
-    id: 3n,
-    medicineId: 1n,
-    medicineName: "ConCor 2.5mg",
-    category: "Hypertension",
-    quantity: 1n,
-    salePrice: 4.5,
-    totalPrice: 4.5,
-    patientName: "Mohamed Samir",
-    saleDate: "2026-01-06",
-    purchasePrice: 3.15,
-  },
-  {
-    id: 4n,
-    medicineId: 8n,
-    medicineName: "Tavanic 500mg",
-    category: "Antibiotics",
-    quantity: 2n,
-    salePrice: 18.0,
-    totalPrice: 36.0,
-    patientName: "Sara Khalil",
-    saleDate: "2026-01-08",
-    purchasePrice: 12.6,
-  },
-  {
-    id: 5n,
-    medicineId: 11n,
-    medicineName: "Amaryl 1mg",
-    category: "Diabetes",
-    quantity: 2n,
-    salePrice: 9.5,
-    totalPrice: 19.0,
-    patientName: "Omar Farouk",
-    saleDate: "2026-01-10",
-    purchasePrice: 6.65,
-  },
-  {
-    id: 6n,
-    medicineId: 16n,
-    medicineName: "Controloc 40mg",
-    category: "Ulcer & Others",
-    quantity: 1n,
-    salePrice: 9.25,
-    totalPrice: 9.25,
-    patientName: "Layla Nasser",
-    saleDate: "2026-01-12",
-    purchasePrice: 6.48,
-  },
-  {
-    id: 7n,
-    medicineId: 14n,
-    medicineName: "Glucophage 1000mg",
-    category: "Diabetes",
-    quantity: 3n,
-    salePrice: 8.0,
-    totalPrice: 24.0,
-    patientName: "Karim Adel",
-    saleDate: "2026-01-14",
-    purchasePrice: 5.6,
-  },
-  {
-    id: 8n,
-    medicineId: 7n,
-    medicineName: "SupraX 400mg",
-    category: "Antibiotics",
-    quantity: 1n,
-    salePrice: 12.0,
-    totalPrice: 12.0,
-    patientName: "Nour Ibrahim",
-    saleDate: "2026-01-15",
-    purchasePrice: 8.4,
-  },
-  {
-    id: 9n,
-    medicineId: 3n,
-    medicineName: "ConCor 10mg",
-    category: "Hypertension",
-    quantity: 2n,
-    salePrice: 7.2,
-    totalPrice: 14.4,
-    patientName: "Hana Mostafa",
-    saleDate: "2026-01-17",
-    purchasePrice: 5.04,
-  },
-  {
-    id: 10n,
-    medicineId: 17n,
-    medicineName: "Nexium 40mg",
-    category: "Ulcer & Others",
-    quantity: 2n,
-    salePrice: 11.5,
-    totalPrice: 23.0,
-    patientName: "Tarek Saleh",
-    saleDate: "2026-01-19",
-    purchasePrice: 8.05,
-  },
-  {
-    id: 11n,
-    medicineId: 12n,
-    medicineName: "Amaryl 2mg",
-    category: "Diabetes",
-    quantity: 1n,
-    salePrice: 12.0,
-    totalPrice: 12.0,
-    patientName: "Rana Mahmoud",
-    saleDate: "2026-01-21",
-    purchasePrice: 8.4,
-  },
-  {
-    id: 12n,
-    medicineId: 5n,
-    medicineName: "ErastaPex 40mg",
-    category: "Hypertension",
-    quantity: 2n,
-    salePrice: 11.0,
-    totalPrice: 22.0,
-    patientName: "Youssef Amr",
-    saleDate: "2026-01-22",
-    purchasePrice: 7.7,
-  },
-  {
-    id: 13n,
-    medicineId: 20n,
-    medicineName: "Crestor 10mg",
-    category: "Ulcer & Others",
-    quantity: 1n,
-    salePrice: 14.0,
-    totalPrice: 14.0,
-    patientName: "Dina Sami",
-    saleDate: "2026-01-24",
-    purchasePrice: 9.8,
-  },
-  {
-    id: 14n,
-    medicineId: 9n,
-    medicineName: "Ceftriaxone 1g",
-    category: "Antibiotics",
-    quantity: 2n,
-    salePrice: 22.5,
-    totalPrice: 45.0,
-    patientName: "Walid Fathy",
-    saleDate: "2026-01-25",
-    purchasePrice: 15.75,
-  },
-  {
-    id: 15n,
-    medicineId: 15n,
-    medicineName: "Galvus Met 50/1000mg",
-    category: "Diabetes",
-    quantity: 1n,
-    salePrice: 24.0,
-    totalPrice: 24.0,
-    patientName: "Mona Zaki",
-    saleDate: "2026-01-27",
-    purchasePrice: 16.8,
-  },
-  {
-    id: 16n,
-    medicineId: 18n,
-    medicineName: "Pantoloc 20mg",
-    category: "Ulcer & Others",
-    quantity: 2n,
-    salePrice: 7.8,
-    totalPrice: 15.6,
-    patientName: "Khaled Gamal",
-    saleDate: "2026-01-29",
-    purchasePrice: 5.46,
-  },
-  {
-    id: 17n,
-    medicineId: 2n,
-    medicineName: "ConCor 5mg",
-    category: "Hypertension",
-    quantity: 1n,
-    salePrice: 5.75,
-    totalPrice: 5.75,
-    patientName: "Amira Hossam",
-    saleDate: "2026-01-31",
-    purchasePrice: 4.03,
-  },
-  {
-    id: 18n,
-    medicineId: 6n,
-    medicineName: "Augmentin 1g",
-    category: "Antibiotics",
-    quantity: 3n,
-    salePrice: 15.5,
-    totalPrice: 46.5,
-    patientName: "Hassan Youssef",
-    saleDate: "2026-02-02",
-    purchasePrice: 10.85,
-  },
-  {
-    id: 19n,
-    medicineId: 13n,
-    medicineName: "Glucophage 500mg",
-    category: "Diabetes",
-    quantity: 2n,
-    salePrice: 5.5,
-    totalPrice: 11.0,
-    patientName: "Nadia Hamid",
-    saleDate: "2026-02-03",
-    purchasePrice: 3.85,
-  },
-  {
-    id: 20n,
-    medicineId: 10n,
-    medicineName: "Flagyl 500mg",
-    category: "Antibiotics",
-    quantity: 2n,
-    salePrice: 6.75,
-    totalPrice: 13.5,
-    patientName: "Sherif Taha",
-    saleDate: "2026-02-05",
-    purchasePrice: 4.73,
-  },
-  {
-    id: 21n,
-    medicineId: 4n,
-    medicineName: "ErastaPex 20mg",
-    category: "Hypertension",
-    quantity: 1n,
-    salePrice: 8.5,
-    totalPrice: 8.5,
-    patientName: "Ghada Shawky",
-    saleDate: "2026-02-07",
-    purchasePrice: 5.95,
-  },
-  {
-    id: 22n,
-    medicineId: 14n,
-    medicineName: "Glucophage 1000mg",
-    category: "Diabetes",
-    quantity: 4n,
-    salePrice: 8.0,
-    totalPrice: 32.0,
-    patientName: "Bassem Ragab",
-    saleDate: "2026-02-08",
-    purchasePrice: 5.6,
-  },
-  {
-    id: 23n,
-    medicineId: 7n,
-    medicineName: "SupraX 400mg",
-    category: "Antibiotics",
-    quantity: 2n,
-    salePrice: 12.0,
-    totalPrice: 24.0,
-    patientName: "Samira Lotfy",
-    saleDate: "2026-02-10",
-    purchasePrice: 8.4,
-  },
-  {
-    id: 24n,
-    medicineId: 19n,
-    medicineName: "Ator 20mg",
-    category: "Ulcer & Others",
-    quantity: 1n,
-    salePrice: 8.5,
-    totalPrice: 8.5,
-    patientName: "Essam Fouad",
-    saleDate: "2026-02-12",
-    purchasePrice: 5.95,
-  },
-  {
-    id: 25n,
-    medicineId: 11n,
-    medicineName: "Amaryl 1mg",
-    category: "Diabetes",
-    quantity: 3n,
-    salePrice: 9.5,
-    totalPrice: 28.5,
-    patientName: "Abeer Magdy",
-    saleDate: "2026-02-13",
-    purchasePrice: 6.65,
-  },
-  {
-    id: 26n,
-    medicineId: 16n,
-    medicineName: "Controloc 40mg",
-    category: "Ulcer & Others",
-    quantity: 2n,
-    salePrice: 9.25,
-    totalPrice: 18.5,
-    patientName: "Randa Ezzat",
-    saleDate: "2026-02-15",
-    purchasePrice: 6.48,
-  },
-  {
-    id: 27n,
-    medicineId: 8n,
-    medicineName: "Tavanic 500mg",
-    category: "Antibiotics",
-    quantity: 1n,
-    salePrice: 18.0,
-    totalPrice: 18.0,
-    patientName: "Mahmoud Atef",
-    saleDate: "2026-02-17",
-    purchasePrice: 12.6,
-  },
-  {
-    id: 28n,
-    medicineId: 3n,
-    medicineName: "ConCor 10mg",
-    category: "Hypertension",
-    quantity: 2n,
-    salePrice: 7.2,
-    totalPrice: 14.4,
-    patientName: "Iman Barakat",
-    saleDate: "2026-02-19",
-    purchasePrice: 5.04,
-  },
-  {
-    id: 29n,
-    medicineId: 21n,
-    medicineName: "Aspirin 100mg",
-    category: "Ulcer & Others",
-    quantity: 2n,
-    salePrice: 2.5,
-    totalPrice: 5.0,
-    patientName: "Fady Wahba",
-    saleDate: "2026-02-20",
-    purchasePrice: 1.75,
-  },
-  {
-    id: 30n,
-    medicineId: 6n,
-    medicineName: "Augmentin 1g",
-    category: "Antibiotics",
-    quantity: 2n,
-    salePrice: 15.5,
-    totalPrice: 31.0,
-    patientName: "Lamia Sobhy",
-    saleDate: "2026-02-22",
-    purchasePrice: 10.85,
-  },
-  {
-    id: 31n,
-    medicineId: 15n,
-    medicineName: "Galvus Met 50/1000mg",
-    category: "Diabetes",
-    quantity: 1n,
-    salePrice: 24.0,
-    totalPrice: 24.0,
-    patientName: "Sherif Helmy",
-    saleDate: "2026-02-24",
-    purchasePrice: 16.8,
-  },
-  {
-    id: 32n,
-    medicineId: 12n,
-    medicineName: "Amaryl 2mg",
-    category: "Diabetes",
-    quantity: 2n,
-    salePrice: 12.0,
-    totalPrice: 24.0,
-    patientName: "Heba Mansour",
-    saleDate: "2026-02-25",
-    purchasePrice: 8.4,
-  },
-  {
-    id: 33n,
-    medicineId: 5n,
-    medicineName: "ErastaPex 40mg",
-    category: "Hypertension",
-    quantity: 1n,
-    salePrice: 11.0,
-    totalPrice: 11.0,
-    patientName: "Amr Osman",
-    saleDate: "2026-02-27",
-    purchasePrice: 7.7,
-  },
-  {
-    id: 34n,
-    medicineId: 23n,
-    medicineName: "Metformin 850mg",
-    category: "Diabetes",
-    quantity: 3n,
-    salePrice: 4.75,
-    totalPrice: 14.25,
-    patientName: "Noha Salem",
-    saleDate: "2026-02-28",
-    purchasePrice: 3.33,
-  },
-  {
-    id: 35n,
-    medicineId: 6n,
-    medicineName: "Augmentin 1g",
-    category: "Antibiotics",
-    quantity: 3n,
-    salePrice: 15.5,
-    totalPrice: 46.5,
-    patientName: "Ibrahim Badr",
-    saleDate: "2026-03-01",
-    purchasePrice: 10.85,
-  },
-  {
-    id: 36n,
-    medicineId: 13n,
-    medicineName: "Glucophage 500mg",
-    category: "Diabetes",
-    quantity: 4n,
-    salePrice: 5.5,
-    totalPrice: 22.0,
-    patientName: "Yasmine Salama",
-    saleDate: "2026-03-03",
-    purchasePrice: 3.85,
-  },
-  {
-    id: 37n,
-    medicineId: 14n,
-    medicineName: "Glucophage 1000mg",
-    category: "Diabetes",
-    quantity: 2n,
-    salePrice: 8.0,
-    totalPrice: 16.0,
-    patientName: "Mostafa Emad",
-    saleDate: "2026-03-05",
-    purchasePrice: 5.6,
-  },
-  {
-    id: 38n,
-    medicineId: 7n,
-    medicineName: "SupraX 400mg",
-    category: "Antibiotics",
-    quantity: 2n,
-    salePrice: 12.0,
-    totalPrice: 24.0,
-    patientName: "Doaa Abdel",
-    saleDate: "2026-03-07",
-    purchasePrice: 8.4,
-  },
-  {
-    id: 39n,
-    medicineId: 11n,
-    medicineName: "Amaryl 1mg",
-    category: "Diabetes",
-    quantity: 3n,
-    salePrice: 9.5,
-    totalPrice: 28.5,
-    patientName: "Samir Naguib",
-    saleDate: "2026-03-08",
-    purchasePrice: 6.65,
-  },
-  {
-    id: 40n,
-    medicineId: 4n,
-    medicineName: "ErastaPex 20mg",
-    category: "Hypertension",
-    quantity: 2n,
-    salePrice: 8.5,
-    totalPrice: 17.0,
-    patientName: "Hanan Gohar",
-    saleDate: "2026-03-10",
-    purchasePrice: 5.95,
-  },
-  {
-    id: 41n,
-    medicineId: 8n,
-    medicineName: "Tavanic 500mg",
-    category: "Antibiotics",
-    quantity: 1n,
-    salePrice: 18.0,
-    totalPrice: 18.0,
-    patientName: "Wael Diab",
-    saleDate: "2026-03-12",
-    purchasePrice: 12.6,
-  },
-  {
-    id: 42n,
-    medicineId: 16n,
-    medicineName: "Controloc 40mg",
-    category: "Ulcer & Others",
-    quantity: 2n,
-    salePrice: 9.25,
-    totalPrice: 18.5,
-    patientName: "Mariam Fawzi",
-    saleDate: "2026-03-13",
-    purchasePrice: 6.48,
-  },
-  {
-    id: 43n,
-    medicineId: 19n,
-    medicineName: "Ator 20mg",
-    category: "Ulcer & Others",
-    quantity: 2n,
-    salePrice: 8.5,
-    totalPrice: 17.0,
-    patientName: "Tamer Badawi",
-    saleDate: "2026-03-15",
-    purchasePrice: 5.95,
-  },
-  {
-    id: 44n,
-    medicineId: 2n,
-    medicineName: "ConCor 5mg",
-    category: "Hypertension",
-    quantity: 1n,
-    salePrice: 5.75,
-    totalPrice: 5.75,
-    patientName: "Shady Anis",
-    saleDate: "2026-03-17",
-    purchasePrice: 4.03,
-  },
-  {
-    id: 45n,
-    medicineId: 22n,
-    medicineName: "Bisoprolol 5mg",
-    category: "Hypertension",
-    quantity: 2n,
-    salePrice: 6.0,
-    totalPrice: 12.0,
-    patientName: "Reem Soliman",
-    saleDate: "2026-03-18",
-    purchasePrice: 4.2,
-  },
-  {
-    id: 46n,
-    medicineId: 9n,
-    medicineName: "Ceftriaxone 1g",
-    category: "Antibiotics",
-    quantity: 2n,
-    salePrice: 22.5,
-    totalPrice: 45.0,
-    patientName: "Amgad Khalaf",
-    saleDate: "2026-03-20",
-    purchasePrice: 15.75,
-  },
-  {
-    id: 47n,
-    medicineId: 17n,
-    medicineName: "Nexium 40mg",
-    category: "Ulcer & Others",
-    quantity: 1n,
-    salePrice: 11.5,
-    totalPrice: 11.5,
-    patientName: "Nagwa Rashad",
-    saleDate: "2026-03-21",
-    purchasePrice: 8.05,
-  },
-  {
-    id: 48n,
-    medicineId: 24n,
-    medicineName: "Omeprazole 20mg",
-    category: "Ulcer & Others",
-    quantity: 3n,
-    salePrice: 3.8,
-    totalPrice: 11.4,
-    patientName: "Osama Tantawi",
-    saleDate: "2026-03-23",
-    purchasePrice: 2.66,
-  },
-  {
-    id: 49n,
-    medicineId: 6n,
-    medicineName: "Augmentin 1g",
-    category: "Antibiotics",
-    quantity: 2n,
-    salePrice: 15.5,
-    totalPrice: 31.0,
-    patientName: "Aya Fouad",
-    saleDate: "2026-03-25",
-    purchasePrice: 10.85,
-  },
-  {
-    id: 50n,
-    medicineId: 13n,
-    medicineName: "Glucophage 500mg",
-    category: "Diabetes",
-    quantity: 3n,
-    salePrice: 5.5,
-    totalPrice: 16.5,
-    patientName: "Hazem Lotfy",
-    saleDate: "2026-03-27",
-    purchasePrice: 3.85,
-  },
-];
-
-type InvoiceForm = {
-  medicineId: string;
-  quantity: string;
-  price: string;
-  patientName: string;
-  saleDate: string;
-};
-
-const EMPTY_FORM: InvoiceForm = {
-  medicineId: "",
-  quantity: "",
-  price: "",
-  patientName: "",
-  saleDate: new Date().toISOString().split("T")[0],
-};
-
-// ── Static fallback medicines (same list as Inventory) ──
-// biome-ignore lint/correctness/noUnusedVariables: static fallback kept for reference
-const STATIC_MEDICINES_FOR_SALES = [
-  { id: 1n, name: "ConCor", dosage: "2.5mg", quantity: 200n, salePrice: 4.5 },
-  { id: 2n, name: "ConCor", dosage: "5mg", quantity: 150n, salePrice: 5.75 },
-  { id: 3n, name: "ConCor", dosage: "10mg", quantity: 180n, salePrice: 7.2 },
-  { id: 4n, name: "ErastaPex", dosage: "20mg", quantity: 120n, salePrice: 8.5 },
-  {
-    id: 5n,
-    name: "ErastaPex",
-    dosage: "40mg",
-    quantity: 100n,
-    salePrice: 11.0,
-  },
-  { id: 6n, name: "Augmentin", dosage: "1g", quantity: 90n, salePrice: 15.5 },
-  { id: 7n, name: "SupraX", dosage: "400mg", quantity: 110n, salePrice: 12.0 },
-  { id: 8n, name: "Tavanic", dosage: "500mg", quantity: 80n, salePrice: 18.0 },
-  { id: 9n, name: "Ceftriaxone", dosage: "1g", quantity: 60n, salePrice: 22.5 },
-  { id: 10n, name: "Flagyl", dosage: "500mg", quantity: 130n, salePrice: 6.75 },
-  { id: 11n, name: "Amaryl", dosage: "1mg", quantity: 200n, salePrice: 9.5 },
-  { id: 12n, name: "Amaryl", dosage: "2mg", quantity: 180n, salePrice: 12.0 },
-  {
-    id: 13n,
-    name: "Glucophage",
-    dosage: "500mg",
-    quantity: 250n,
-    salePrice: 5.5,
-  },
-  {
-    id: 14n,
-    name: "Glucophage",
-    dosage: "1000mg",
-    quantity: 220n,
-    salePrice: 8.0,
-  },
-  {
-    id: 15n,
-    name: "Galvus Met",
-    dosage: "50/1000mg",
-    quantity: 90n,
-    salePrice: 24.0,
-  },
-  {
-    id: 16n,
-    name: "Controloc",
-    dosage: "40mg",
-    quantity: 160n,
-    salePrice: 9.25,
-  },
-  { id: 17n, name: "Nexium", dosage: "40mg", quantity: 140n, salePrice: 11.5 },
-  { id: 18n, name: "Pantoloc", dosage: "20mg", quantity: 170n, salePrice: 7.5 },
-  { id: 19n, name: "Ator", dosage: "20mg", quantity: 190n, salePrice: 8.5 },
-  { id: 20n, name: "Crestor", dosage: "10mg", quantity: 160n, salePrice: 12.5 },
-  { id: 21n, name: "Zocor", dosage: "20mg", quantity: 130n, salePrice: 7.0 },
-  {
-    id: 22n,
-    name: "Bisoprolol",
-    dosage: "5mg",
-    quantity: 110n,
-    salePrice: 6.0,
-  },
-  {
-    id: 23n,
-    name: "Amlodipine",
-    dosage: "5mg",
-    quantity: 200n,
-    salePrice: 4.75,
-  },
-  {
-    id: 24n,
-    name: "Omeprazole",
-    dosage: "20mg",
-    quantity: 150n,
-    salePrice: 3.8,
-  },
-];
+const today = new Date().toISOString().split("T")[0];
+const EMPTY_FORM = { medicineName: "", quantity: "", price: "", date: today };
 
 export function Sales() {
-  const store = usePharmacyStore();
-  const [form, setForm] = useState<InvoiceForm>(EMPTY_FORM);
+  const { medicines, sales, addSale, updateSale, deleteSale } = usePharmacy();
+  const { isAdmin } = useAuth();
 
-  const displayMedicines = store.medicines;
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState("");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // When medicine is selected, auto-fill price
-  function handleMedicineSelect(medId: string) {
-    const med = displayMedicines.find((m) => String(Number(m.id)) === medId);
-    setForm((f) => ({
-      ...f,
-      medicineId: medId,
-      price: med ? String(med.salePrice) : f.price,
-    }));
+  const filtered = sales
+    .filter(
+      (s) =>
+        s.medicineName.toLowerCase().includes(search.toLowerCase()) ||
+        s.id.toLowerCase().includes(search.toLowerCase()),
+    )
+    .slice()
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  // Derived from selected medicine
+  const selectedMedicine = useMemo(
+    () => medicines.find((m) => m.name === form.medicineName) ?? null,
+    [medicines, form.medicineName],
+  );
+
+  const qty = Number(form.quantity);
+  const prc = Number(form.price);
+  const total =
+    !Number.isNaN(qty) && !Number.isNaN(prc) && qty > 0 && prc > 0
+      ? qty * prc
+      : 0;
+
+  const stockExceeded =
+    selectedMedicine !== null &&
+    !Number.isNaN(qty) &&
+    qty > 0 &&
+    qty > selectedMedicine.quantity;
+
+  function openAdd() {
+    setEditId(null);
+    setForm({ ...EMPTY_FORM, date: new Date().toISOString().split("T")[0] });
+    setFormError("");
+    setDialogOpen(true);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.medicineId) {
-      toast.error("Please select a medicine");
+  function openEdit(s: Sale) {
+    setEditId(s.id);
+    setForm({
+      medicineName: s.medicineName,
+      quantity: String(s.quantity),
+      price: String(s.price),
+      date: s.date,
+    });
+    setFormError("");
+    setDialogOpen(true);
+  }
+
+  function handleMedicineChange(name: string) {
+    const med = medicines.find((m) => m.name === name);
+    setForm((f) => ({
+      ...f,
+      medicineName: name,
+      price: med ? String(med.price) : "",
+    }));
+    setFormError("");
+  }
+
+  function handleSave() {
+    const { medicineName, date } = form;
+    if (!medicineName) {
+      setFormError("Please select a medicine.");
       return;
     }
-    const qty = Number.parseInt(form.quantity, 10);
-    if (!qty || qty <= 0) {
-      toast.error("Quantity must be a positive number");
+    if (!qty || Number.isNaN(qty) || qty <= 0) {
+      setFormError("Quantity must be a positive number.");
       return;
     }
-    const selectedMed = displayMedicines.find(
-      (m) => String(Number(m.id)) === form.medicineId,
-    );
-    // Stock validation
-    if (selectedMed && qty > Number(selectedMed.quantity)) {
-      toast.error(
-        `Insufficient stock — only ${Number(selectedMed.quantity)} units available for ${selectedMed.name} ${selectedMed.dosage}`,
+    if (!prc || Number.isNaN(prc) || prc <= 0) {
+      setFormError("Price must be a positive number.");
+      return;
+    }
+    if (!date) {
+      setFormError("Please select a date.");
+      return;
+    }
+    if (stockExceeded && !editId) {
+      setFormError(
+        `Quantity exceeds available stock (${selectedMedicine?.quantity ?? 0} units).`,
       );
       return;
     }
-    if (!form.saleDate) {
-      toast.error("Sale date is required");
-      return;
-    }
-    const result = await store.recordSale({
-      medicineId: BigInt(form.medicineId),
-      quantity: BigInt(qty),
-      patientName: form.patientName.trim() || "Anonymous",
-      saleDate: form.saleDate,
-    });
-    if (result) {
-      const _medName = selectedMed
-        ? `${selectedMed.name} ${selectedMed.dosage}`
-        : "Medicine";
-      const _total = result.totalPrice.toFixed(2);
-      toast.success("Item added successfully");
-      setForm({ ...EMPTY_FORM, saleDate: form.saleDate });
+
+    if (editId) {
+      updateSale(editId, {
+        medicineName,
+        quantity: qty,
+        price: prc,
+        total: qty * prc,
+        date,
+      });
+      toast.success("Invoice updated successfully");
     } else {
-      toast.error("Invoice failed — check stock availability");
+      addSale({
+        medicineName,
+        quantity: qty,
+        price: prc,
+        total: qty * prc,
+        date,
+      });
+      toast.success("Invoice created successfully");
     }
+    setDialogOpen(false);
   }
 
-  const displaySales = store.sales;
-  const totalRevenue = displaySales.reduce((acc, s) => acc + s.totalPrice, 0);
+  function handleDelete(id: string) {
+    deleteSale(id);
+    setDeleteConfirmId(null);
+    toast.success("Invoice deleted successfully");
+  }
+
+  const totalRevenue = sales.reduce((s, x) => s + x.total, 0);
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-display font-800 text-black tracking-tight flex items-center gap-2">
-          <Receipt className="w-6 h-6 text-black" />
-          Invoices / Sales
-        </h1>
-        <p className="text-sm text-slate-500 mt-0.5 font-medium">
-          Add new invoices and view transaction history
-        </p>
+    <div className="p-4 md:p-6 space-y-5 md:ml-0 ml-12">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-black font-display">
+            Sales / Invoices
+          </h1>
+          <p className="text-sm text-gray-500 font-semibold">
+            {sales.length} invoices · Total: {totalRevenue.toLocaleString()} EGP
+          </p>
+        </div>
+        {isAdmin && (
+          <Button
+            onClick={openAdd}
+            className="bg-black text-white hover:bg-gray-900 font-bold"
+            data-ocid="sales.add_invoice.button"
+          >
+            <Plus className="w-4 h-4 mr-2" /> New Invoice
+          </Button>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* New Invoice Form */}
-        <div className="xl:col-span-1">
-          <Card className="bg-white border-slate-200 shadow-xs">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-[15px] font-display font-700 text-black flex items-center gap-2">
-                <Receipt className="w-4 h-4 text-black" />
-                Add New Invoice
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label className="text-[12px] font-700 text-black mb-1.5 block">
-                    Medicine *
-                  </Label>
-                  <Select
-                    value={form.medicineId}
-                    onValueChange={handleMedicineSelect}
-                  >
-                    <SelectTrigger
-                      data-ocid="sales.medicine.select"
-                      className="text-black font-medium text-[13px]"
-                    >
-                      <SelectValue placeholder="Select medicine" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {displayMedicines.map((m) => (
-                        <SelectItem
-                          key={m.id.toString()}
-                          value={String(Number(m.id))}
-                          className="font-medium text-black"
-                        >
-                          {m.name} {m.dosage} (Stock: {Number(m.quantity)})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+      <Input
+        placeholder="Search by medicine or invoice ID…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="max-w-sm border-gray-300 text-black font-semibold"
+        data-ocid="sales.search_input"
+      />
 
-                {/* Stock info banner */}
-                {form.medicineId &&
-                  (() => {
-                    const selMed = displayMedicines.find(
-                      (m) => String(Number(m.id)) === form.medicineId,
-                    );
-                    if (!selMed) return null;
-                    const stock = Number(selMed.quantity);
-                    const isLow = stock <= 20;
-                    return (
-                      <div
-                        data-ocid="sales.stock_info.panel"
-                        className={`flex items-center justify-between rounded-md px-3 py-2 text-[12px] font-700 border ${isLow ? "bg-red-50 border-red-200 text-red-700" : "bg-slate-50 border-slate-200 text-slate-600"}`}
-                      >
-                        <span>Available Stock</span>
-                        <span className={isLow ? "text-red-700" : "text-black"}>
-                          {stock} units{isLow ? " — Low Stock" : ""}
-                        </span>
-                      </div>
-                    );
-                  })()}
-
-                <div>
-                  <Label className="text-[12px] font-700 text-black mb-1.5 block">
-                    Quantity *
-                  </Label>
-                  <Input
-                    data-ocid="sales.quantity.input"
-                    type="number"
-                    min="1"
-                    required
-                    value={form.quantity}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, quantity: e.target.value }))
-                    }
-                    placeholder="1"
-                    className="text-black font-medium text-[13px]"
-                  />
-                  {form.quantity &&
-                    form.medicineId &&
-                    (() => {
-                      const selMed = displayMedicines.find(
-                        (m) => String(Number(m.id)) === form.medicineId,
-                      );
-                      const qty = Number.parseInt(form.quantity, 10);
-                      if (!selMed || !qty) return null;
-                      const stock = Number(selMed.quantity);
-                      if (qty > stock) {
-                        return (
-                          <p
-                            data-ocid="sales.quantity.error_state"
-                            className="text-red-600 text-[11px] font-700 mt-1"
-                          >
-                            Exceeds available stock ({stock} units)
-                          </p>
-                        );
-                      }
-                      return null;
-                    })()}
-                </div>
-
-                <div>
-                  <Label className="text-[12px] font-700 text-black mb-1.5 block">
-                    Price (USD)
-                    {form.medicineId && (
-                      <span className="text-slate-400 font-normal ml-1">
-                        (auto-filled from sale price)
-                      </span>
-                    )}
-                  </Label>
-                  <Input
-                    data-ocid="sales.price.input"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={form.price}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, price: e.target.value }))
-                    }
-                    placeholder="0.00"
-                    className="text-black font-medium text-[13px]"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-[12px] font-700 text-black mb-1.5 block">
-                    Patient Name
-                  </Label>
-                  <Input
-                    data-ocid="sales.patient.input"
-                    value={form.patientName}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, patientName: e.target.value }))
-                    }
-                    placeholder="Patient name (optional)"
-                    className="text-black font-medium text-[13px]"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-[12px] font-700 text-black mb-1.5 block">
-                    Date *
-                  </Label>
-                  <Input
-                    data-ocid="sales.date.input"
-                    type="date"
-                    required
-                    value={form.saleDate}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, saleDate: e.target.value }))
-                    }
-                    className="text-black font-medium text-[13px]"
-                  />
-                </div>
-
-                {/* Live total preview */}
-                {form.quantity && form.price && (
-                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                    <p className="text-[11px] font-700 text-slate-500 uppercase tracking-wider">
-                      Invoice Total
-                    </p>
-                    <p className="text-xl font-display font-800 text-black mt-0.5">
-                      $
-                      {(
-                        Number.parseFloat(form.price) *
-                        Number.parseInt(form.quantity, 10)
-                      ).toFixed(2)}
-                    </p>
-                  </div>
+      <div className="border border-gray-200 rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50">
+                <TableHead className="font-bold text-black text-xs uppercase tracking-wide">
+                  ID
+                </TableHead>
+                <TableHead className="font-bold text-black text-xs uppercase tracking-wide">
+                  Medicine
+                </TableHead>
+                <TableHead className="font-bold text-black text-xs uppercase tracking-wide">
+                  Qty
+                </TableHead>
+                <TableHead className="font-bold text-black text-xs uppercase tracking-wide">
+                  Price
+                </TableHead>
+                <TableHead className="font-bold text-black text-xs uppercase tracking-wide">
+                  Total (EGP)
+                </TableHead>
+                <TableHead className="font-bold text-black text-xs uppercase tracking-wide">
+                  Date
+                </TableHead>
+                {isAdmin && (
+                  <TableHead className="font-bold text-black text-xs uppercase tracking-wide">
+                    Actions
+                  </TableHead>
                 )}
-
-                <Button
-                  type="submit"
-                  disabled={false}
-                  data-ocid="sales.submit_button"
-                  className="w-full bg-black hover:bg-zinc-800 text-white font-700 gap-2 mt-2"
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((s, i) => (
+                <TableRow
+                  key={s.id}
+                  className="border-b border-gray-100"
+                  data-ocid={`sales.invoice.row.${i + 1}`}
                 >
-                  {false && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Add Invoice
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Summary Card */}
-          <Card className="bg-white border-slate-200 shadow-xs mt-4">
-            <CardContent className="p-5">
-              <p className="text-[11px] font-700 text-slate-500 uppercase tracking-wider mb-1">
-                Total Revenue
-              </p>
-              <p className="text-2xl font-display font-800 text-black">
-                $
-                {totalRevenue.toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                })}
-              </p>
-              <p className="text-[12px] text-slate-400 font-medium mt-1">
-                From {displaySales.length} invoices
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Invoice History Table */}
-        <div className="xl:col-span-2">
-          <Card className="bg-white border-slate-200 shadow-xs">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-[15px] font-display font-700 text-black">
-                Invoice History
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-auto max-h-[600px]">
-                <Table data-ocid="sales.table">
-                  <TableHeader>
-                    <TableRow className="bg-slate-50 border-b border-slate-200">
-                      {[
-                        "Medicine",
-                        "Category",
-                        "Qty",
-                        "Sale Price",
-                        "Total",
-                        "Patient",
-                        "Date",
-                      ].map((h) => (
-                        <TableHead
-                          key={h}
-                          className="pharma-table-header py-3 px-4 text-left whitespace-nowrap"
+                  <TableCell className="font-mono text-xs text-gray-500">
+                    {s.id}
+                  </TableCell>
+                  <TableCell className="font-semibold text-black">
+                    {s.medicineName}
+                  </TableCell>
+                  <TableCell className="font-semibold text-black">
+                    {s.quantity}
+                  </TableCell>
+                  <TableCell className="font-semibold text-black">
+                    {s.price}
+                  </TableCell>
+                  <TableCell className="font-bold text-black">
+                    {s.total.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="font-semibold text-black">
+                    {s.date}
+                  </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(s)}
+                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-black transition-colors"
+                          data-ocid={`sales.invoice.edit_button.${i + 1}`}
                         >
-                          {h}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(() => false)() ? (
-                      Array.from({ length: 6 }, (_, i) => `row-${i}`).map(
-                        (rowKey) => (
-                          <TableRow key={rowKey}>
-                            {Array.from(
-                              { length: 7 },
-                              (_, j) => `cell-${j}`,
-                            ).map((cellKey) => (
-                              <TableCell key={cellKey}>
-                                <Skeleton className="h-4 w-full" />
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ),
-                      )
-                    ) : displaySales.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-10">
-                          <div
-                            data-ocid="sales.empty_state"
-                            className="text-slate-400 font-medium"
-                          >
-                            No invoices recorded yet.
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      [...displaySales]
-                        .sort((a, b) => b.saleDate.localeCompare(a.saleDate))
-                        .map((s, idx) => (
-                          <TableRow
-                            key={s.id.toString()}
-                            data-ocid={`sales.item.${idx + 1}`}
-                            className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
-                          >
-                            <TableCell className="pharma-table-cell py-3 px-4 font-700 text-[13px] whitespace-nowrap">
-                              {s.medicineName}
-                            </TableCell>
-                            <TableCell className="pharma-table-cell py-3 px-4 text-[13px]">
-                              {s.category}
-                            </TableCell>
-                            <TableCell className="pharma-table-cell py-3 px-4 text-[13px] font-700">
-                              {Number(s.quantity)}
-                            </TableCell>
-                            <TableCell className="pharma-table-cell py-3 px-4 text-[13px] whitespace-nowrap">
-                              ${s.salePrice.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="pharma-table-cell py-3 px-4 text-[13px] font-700 text-black whitespace-nowrap">
-                              ${s.totalPrice.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="pharma-table-cell py-3 px-4 text-[13px]">
-                              {s.patientName || "—"}
-                            </TableCell>
-                            <TableCell className="pharma-table-cell py-3 px-4 text-[13px] whitespace-nowrap">
-                              {s.saleDate}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirmId(s.id)}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
+                          data-ocid={`sales.invoice.delete_button.${i + 1}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={isAdmin ? 7 : 6}
+                    className="text-center py-8 text-gray-400 font-semibold"
+                    data-ocid="sales.empty_state"
+                  >
+                    No invoices found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
       </div>
+
+      {/* Add/Edit Invoice Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent
+          className="bg-white border-gray-200 max-w-lg"
+          data-ocid="sales.invoice.dialog"
+        >
+          <DialogHeader>
+            <DialogTitle className="text-black font-bold">
+              {editId ? "Edit Invoice" : "New Invoice"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {formError && (
+              <p
+                className="text-sm font-bold text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2"
+                data-ocid="sales.invoice.error_state"
+              >
+                {formError}
+              </p>
+            )}
+
+            <div className="space-y-1">
+              <Label className="text-black font-semibold text-sm">
+                Medicine
+              </Label>
+              <Select
+                value={form.medicineName}
+                onValueChange={handleMedicineChange}
+              >
+                <SelectTrigger
+                  className="border-gray-300 text-black"
+                  data-ocid="sales.invoice.medicine_select"
+                >
+                  <SelectValue placeholder="Select medicine" />
+                </SelectTrigger>
+                <SelectContent>
+                  {medicines
+                    .slice()
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((m) => (
+                      <SelectItem key={m.id} value={m.name}>
+                        {m.name} (Stock: {m.quantity})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedMedicine && (
+              <div
+                className={`text-xs font-bold px-3 py-2 rounded-lg border ${
+                  selectedMedicine.quantity <= 20
+                    ? "bg-red-50 border-red-200 text-red-700"
+                    : "bg-gray-50 border-gray-200 text-gray-700"
+                }`}
+              >
+                Available Stock: {selectedMedicine.quantity} units
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label className="text-black font-semibold text-sm">
+                  Quantity
+                </Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={form.quantity}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, quantity: e.target.value }));
+                    setFormError("");
+                  }}
+                  className={`border-gray-300 text-black ${stockExceeded ? "border-red-400" : ""}`}
+                  data-ocid="sales.invoice.quantity_input"
+                />
+                {stockExceeded && (
+                  <p className="text-xs font-bold text-red-600">
+                    Exceeds available stock ({selectedMedicine?.quantity})
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-black font-semibold text-sm">
+                  Price (EGP)
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.price}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, price: e.target.value }))
+                  }
+                  className="border-gray-300 text-black"
+                  data-ocid="sales.invoice.price_input"
+                />
+              </div>
+            </div>
+
+            {total > 0 && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                  Auto-calculated Total
+                </p>
+                <p className="text-2xl font-bold text-black mt-1">
+                  {total.toLocaleString()} EGP
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <Label className="text-black font-semibold text-sm">Date</Label>
+              <Input
+                type="date"
+                value={form.date}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, date: e.target.value }))
+                }
+                className="border-gray-300 text-black"
+                data-ocid="sales.invoice.date_input"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              className="border-gray-300 text-black"
+              data-ocid="sales.invoice.cancel_button"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={stockExceeded && !editId}
+              className="bg-black text-white hover:bg-gray-900 font-bold disabled:opacity-50"
+              data-ocid="sales.invoice.save_button"
+            >
+              {editId ? "Update Invoice" : "Create Invoice"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm */}
+      <Dialog
+        open={!!deleteConfirmId}
+        onOpenChange={() => setDeleteConfirmId(null)}
+      >
+        <DialogContent
+          className="bg-white border-gray-200 max-w-sm"
+          data-ocid="sales.invoice.delete_dialog"
+        >
+          <DialogHeader>
+            <DialogTitle className="text-black font-bold">
+              Delete Invoice?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600 font-semibold">
+            This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmId(null)}
+              className="border-gray-300 text-black"
+              data-ocid="sales.invoice.delete_cancel_button"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+              className="bg-red-600 text-white hover:bg-red-700 font-bold"
+              data-ocid="sales.invoice.delete_confirm_button"
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

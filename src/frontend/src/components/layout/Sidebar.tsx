@@ -1,135 +1,144 @@
-import { useIsAdmin } from "@/hooks/useQueries";
-import { cn } from "@/lib/utils";
-import { Link, useLocation } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  Activity,
-  FileText,
+  BarChart3,
+  FlaskConical,
   LayoutDashboard,
-  Pill,
-  Shield,
+  LogOut,
+  Menu,
   ShoppingCart,
   Truck,
   X,
 } from "lucide-react";
+import { useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 
-const navItems = [
-  {
-    path: "/",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    ocid: "nav.dashboard.link",
-  },
-  {
-    path: "/inventory",
-    label: "Medicines",
-    icon: Pill,
-    ocid: "nav.medicines.link",
-  },
-  {
-    path: "/suppliers",
-    label: "Suppliers",
-    icon: Truck,
-    ocid: "nav.suppliers.link",
-  },
-  {
-    path: "/sales",
-    label: "Sales",
-    icon: ShoppingCart,
-    ocid: "nav.sales.link",
-  },
-  {
-    path: "/reports",
-    label: "Reports",
-    icon: FileText,
-    ocid: "nav.reports.link",
-  },
+const NAV_ITEMS = [
+  { label: "Dashboard", path: "/", icon: LayoutDashboard },
+  { label: "Medicines", path: "/inventory", icon: FlaskConical },
+  { label: "Suppliers", path: "/suppliers", icon: Truck },
+  { label: "Sales", path: "/sales", icon: ShoppingCart },
+  { label: "Reports", path: "/reports", icon: BarChart3 },
 ];
 
-interface SidebarProps {
-  onClose?: () => void;
-}
+export function Sidebar() {
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
+  const routerState = useRouterState();
+  const currentPath = routerState.location.pathname;
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-export function Sidebar({ onClose }: SidebarProps) {
-  const location = useLocation();
-  const { data: isAdmin } = useIsAdmin();
+  function handleNav(path: string) {
+    navigate({ to: path });
+    setMobileOpen(false);
+  }
 
-  return (
-    <aside className="w-64 min-h-screen h-full bg-black border-r border-zinc-800 flex flex-col flex-shrink-0">
+  function handleLogout() {
+    logout();
+    navigate({ to: "/login" });
+  }
+
+  const sidebarContent = (
+    <div className="flex flex-col h-full bg-black text-white">
       {/* Logo */}
-      <div className="px-6 py-5 border-b border-zinc-800 flex items-center justify-between">
+      <div className="px-6 py-5 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
-            <Activity className="w-5 h-5 text-black" />
+          <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+            <span className="text-black font-bold text-sm">Rx</span>
           </div>
           <div>
-            <div className="font-display text-[15px] font-800 leading-tight text-white tracking-tight">
-              PharmaCare BIS
-            </div>
-            <div className="text-[11px] text-zinc-400 font-medium">
-              Hospital Analytics
-            </div>
+            <p className="font-bold text-sm leading-tight">PharmaCare BIS</p>
+            <p className="text-xs text-white/50">Hospital Pharmacy</p>
           </div>
         </div>
-        {/* Close button — mobile only */}
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="lg:hidden p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-            aria-label="Close menu"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4">
-        <div className="space-y-0.5">
-          {navItems.map((item) => {
-            const isActive =
-              item.path === "/"
-                ? location.pathname === "/"
-                : location.pathname.startsWith(item.path);
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                data-ocid={item.ocid}
-                onClick={onClose}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-semibold transition-all duration-150",
-                  isActive
-                    ? "bg-white text-black font-bold shadow-sm"
-                    : "text-zinc-400 hover:bg-zinc-800 hover:text-white",
-                )}
-              >
-                <item.icon
-                  className={cn(
-                    "w-4.5 h-4.5 flex-shrink-0",
-                    isActive ? "text-black" : "text-zinc-500",
-                  )}
-                  size={18}
-                />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-4 space-y-1" data-ocid="nav.section">
+        {NAV_ITEMS.map((item) => {
+          const active = currentPath === item.path;
+          const Icon = item.icon;
+          return (
+            <button
+              type="button"
+              key={item.path}
+              onClick={() => handleNav(item.path)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+                active
+                  ? "bg-white text-black"
+                  : "text-white/70 hover:bg-white/10 hover:text-white"
+              }`}
+              data-ocid={`nav.${item.label.toLowerCase()}.link`}
+            >
+              <Icon className="w-4 h-4 flex-shrink-0" />
+              {item.label}
+            </button>
+          );
+        })}
       </nav>
 
-      {/* Footer */}
-      <div className="px-4 py-4 border-t border-zinc-800">
-        <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-zinc-800 rounded-lg">
-          <Shield className="w-3.5 h-3.5 text-white flex-shrink-0" />
-          <span className="text-[12px] font-700 text-white">
-            {isAdmin ? "Admin Access" : "Primary Admin"}
-          </span>
-        </div>
-        <div className="text-[11px] text-zinc-400 text-center leading-relaxed">
-          ferialsameh599@gmail.com
-        </div>
+      {/* User + Logout */}
+      <div className="px-3 py-4 border-t border-white/10">
+        {currentUser && (
+          <div className="px-3 py-2 mb-2">
+            <p className="text-xs font-bold text-white truncate">
+              {currentUser.email}
+            </p>
+            <span
+              className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                currentUser.role === "admin"
+                  ? "bg-white text-black"
+                  : "bg-white/20 text-white"
+              }`}
+            >
+              {currentUser.role === "admin" ? "Admin" : "Viewer"}
+            </span>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+          data-ocid="nav.logout_button"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </button>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop */}
+      <aside className="hidden md:flex flex-col w-60 min-h-screen border-r border-gray-200 flex-shrink-0">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile hamburger */}
+      <div className="md:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          className="fixed top-4 left-4 z-50 p-2 bg-black text-white rounded-lg"
+          data-ocid="nav.mobile_menu_button"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        {mobileOpen && (
+          <div className="fixed inset-0 z-50 flex">
+            <div className="w-64 flex flex-col">{sidebarContent}</div>
+            <button
+              type="button"
+              className="flex-1 bg-black/50"
+              onClick={() => setMobileOpen(false)}
+              aria-label="Close menu"
+            >
+              <X className="absolute top-4 right-4 w-6 h-6 text-white" />
+            </button>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

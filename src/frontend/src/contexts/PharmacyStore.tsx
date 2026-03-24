@@ -1,1208 +1,768 @@
-import { useActor } from "@/hooks/useActor";
 import {
   createContext,
   useCallback,
   useContext,
   useMemo,
-  useRef,
   useState,
 } from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-export interface StoreMedicine {
-  id: bigint;
+export interface Medicine {
+  id: string;
   name: string;
   category: string;
-  dosage: string;
-  quantity: bigint;
-  supplierId: bigint;
-  purchasePrice: number;
-  salePrice: number;
+  quantity: number;
+  price: number;
   expiryDate: string;
-  isNearExpiry: boolean;
+  supplier: string;
 }
 
-export interface StoreSupplier {
-  id: bigint;
+export interface Supplier {
+  id: string;
   name: string;
   contact: string;
+  email: string;
+  suppliedMedicines: string[];
 }
 
-export interface StoreSale {
-  id: bigint;
-  medicineId: bigint;
+export interface Sale {
+  id: string;
   medicineName: string;
-  category: string;
-  quantity: bigint;
-  salePrice: number;
-  totalPrice: number;
-  patientName: string;
-  saleDate: string;
-  purchasePrice: number;
+  quantity: number;
+  price: number;
+  total: number;
+  date: string;
 }
 
-// ── Static seed data ──────────────────────────────────────────────────────────
-const SEED_MEDICINES: StoreMedicine[] = [
+// ── Seed Data ─────────────────────────────────────────────────────────────────
+const SEED_MEDICINES: Medicine[] = [
   {
-    id: 1n,
-    name: "ConCor",
-    category: "Hypertension",
-    dosage: "2.5mg",
-    quantity: 200n,
-    supplierId: 1n,
-    purchasePrice: 3.15,
-    salePrice: 4.5,
-    expiryDate: "2027-01-15",
-    isNearExpiry: false,
-  },
-  {
-    id: 2n,
-    name: "ConCor",
-    category: "Hypertension",
-    dosage: "5mg",
-    quantity: 150n,
-    supplierId: 1n,
-    purchasePrice: 4.03,
-    salePrice: 5.75,
-    expiryDate: "2026-04-01",
-    isNearExpiry: true,
-  },
-  {
-    id: 3n,
-    name: "ConCor",
-    category: "Hypertension",
-    dosage: "10mg",
-    quantity: 180n,
-    supplierId: 1n,
-    purchasePrice: 5.04,
-    salePrice: 7.2,
-    expiryDate: "2026-12-20",
-    isNearExpiry: false,
-  },
-  {
-    id: 4n,
-    name: "ErastaPex",
-    category: "Hypertension",
-    dosage: "20mg",
-    quantity: 120n,
-    supplierId: 2n,
-    purchasePrice: 5.95,
-    salePrice: 8.5,
-    expiryDate: "2027-03-10",
-    isNearExpiry: false,
-  },
-  {
-    id: 5n,
-    name: "ErastaPex",
-    category: "Hypertension",
-    dosage: "40mg",
-    quantity: 100n,
-    supplierId: 2n,
-    purchasePrice: 7.7,
-    salePrice: 11.0,
-    expiryDate: "2027-06-30",
-    isNearExpiry: false,
-  },
-  {
-    id: 6n,
-    name: "Augmentin",
+    id: "m1",
+    name: "Augmentin 1g",
     category: "Antibiotics",
-    dosage: "1g",
-    quantity: 90n,
-    supplierId: 3n,
-    purchasePrice: 10.85,
-    salePrice: 15.5,
-    expiryDate: "2026-04-05",
-    isNearExpiry: true,
+    quantity: 90,
+    price: 45,
+    expiryDate: "2026-06-15",
+    supplier: "Ibn Sina",
   },
   {
-    id: 7n,
-    name: "SupraX",
-    category: "Antibiotics",
-    dosage: "400mg",
-    quantity: 110n,
-    supplierId: 3n,
-    purchasePrice: 8.4,
-    salePrice: 12.0,
-    expiryDate: "2027-02-28",
-    isNearExpiry: false,
+    id: "m2",
+    name: "ConCor 5mg",
+    category: "Cardiovascular",
+    quantity: 15,
+    price: 32,
+    expiryDate: "2026-04-20",
+    supplier: "Pharma Overseas",
   },
   {
-    id: 8n,
-    name: "Tavanic",
-    category: "Antibiotics",
-    dosage: "500mg",
-    quantity: 80n,
-    supplierId: 3n,
-    purchasePrice: 12.6,
-    salePrice: 18.0,
-    expiryDate: "2026-11-15",
-    isNearExpiry: false,
+    id: "m3",
+    name: "ConCor 2.5mg",
+    category: "Cardiovascular",
+    quantity: 80,
+    price: 28,
+    expiryDate: "2026-12-01",
+    supplier: "Pharma Overseas",
   },
   {
-    id: 9n,
-    name: "Ceftriaxone",
-    category: "Antibiotics",
-    dosage: "1g",
-    quantity: 60n,
-    supplierId: 3n,
-    purchasePrice: 15.75,
-    salePrice: 22.5,
-    expiryDate: "2027-01-20",
-    isNearExpiry: false,
-  },
-  {
-    id: 10n,
-    name: "Flagyl",
-    category: "Antibiotics",
-    dosage: "500mg",
-    quantity: 130n,
-    supplierId: 4n,
-    purchasePrice: 4.73,
-    salePrice: 6.75,
-    expiryDate: "2026-10-31",
-    isNearExpiry: false,
-  },
-  {
-    id: 11n,
-    name: "Amaryl",
-    category: "Diabetes",
-    dosage: "1mg",
-    quantity: 200n,
-    supplierId: 2n,
-    purchasePrice: 6.65,
-    salePrice: 9.5,
-    expiryDate: "2027-04-15",
-    isNearExpiry: false,
-  },
-  {
-    id: 12n,
-    name: "Amaryl",
-    category: "Diabetes",
-    dosage: "2mg",
-    quantity: 180n,
-    supplierId: 2n,
-    purchasePrice: 8.4,
-    salePrice: 12.0,
-    expiryDate: "2027-04-15",
-    isNearExpiry: false,
-  },
-  {
-    id: 13n,
-    name: "Glucophage",
-    category: "Diabetes",
-    dosage: "500mg",
-    quantity: 250n,
-    supplierId: 4n,
-    purchasePrice: 3.85,
-    salePrice: 5.5,
-    expiryDate: "2027-08-20",
-    isNearExpiry: false,
-  },
-  {
-    id: 14n,
-    name: "Glucophage",
-    category: "Diabetes",
-    dosage: "1000mg",
-    quantity: 220n,
-    supplierId: 4n,
-    purchasePrice: 5.6,
-    salePrice: 8.0,
-    expiryDate: "2027-08-20",
-    isNearExpiry: false,
-  },
-  {
-    id: 15n,
-    name: "Galvus Met",
-    category: "Diabetes",
-    dosage: "50/1000mg",
-    quantity: 90n,
-    supplierId: 2n,
-    purchasePrice: 16.8,
-    salePrice: 24.0,
+    id: "m4",
+    name: "ErastaPex 20mg",
+    category: "Antihypertensive",
+    quantity: 60,
+    price: 55,
     expiryDate: "2026-09-30",
-    isNearExpiry: false,
+    supplier: "United Pharma",
   },
   {
-    id: 16n,
-    name: "Controloc",
-    category: "Ulcer & Others",
-    dosage: "40mg",
-    quantity: 160n,
-    supplierId: 1n,
-    purchasePrice: 6.48,
-    salePrice: 9.25,
-    expiryDate: "2027-05-10",
-    isNearExpiry: false,
+    id: "m5",
+    name: "Paracetamol 500mg",
+    category: "Analgesic",
+    quantity: 200,
+    price: 5,
+    expiryDate: "2027-01-01",
+    supplier: "Al-Ezaby",
   },
   {
-    id: 17n,
-    name: "Nexium",
-    category: "Ulcer & Others",
-    dosage: "40mg",
-    quantity: 140n,
-    supplierId: 2n,
-    purchasePrice: 8.05,
-    salePrice: 11.5,
+    id: "m6",
+    name: "Amoxicillin 250mg",
+    category: "Antibiotics",
+    quantity: 120,
+    price: 18,
+    expiryDate: "2026-11-15",
+    supplier: "Ibn Sina",
+  },
+  {
+    id: "m7",
+    name: "Metformin 500mg",
+    category: "Antidiabetic",
+    quantity: 150,
+    price: 12,
+    expiryDate: "2027-03-01",
+    supplier: "United Pharma",
+  },
+  {
+    id: "m8",
+    name: "Atorvastatin 10mg",
+    category: "Cardiovascular",
+    quantity: 95,
+    price: 35,
+    expiryDate: "2026-10-20",
+    supplier: "Pharma Overseas",
+  },
+  {
+    id: "m9",
+    name: "Omeprazole 20mg",
+    category: "Gastrointestinal",
+    quantity: 8,
+    price: 22,
+    expiryDate: "2026-03-30",
+    supplier: "Al-Ezaby",
+  },
+  {
+    id: "m10",
+    name: "Aspirin 100mg",
+    category: "Analgesic",
+    quantity: 180,
+    price: 8,
+    expiryDate: "2027-06-01",
+    supplier: "Ibn Sina",
+  },
+  {
+    id: "m11",
+    name: "Glucophage 500mg",
+    category: "Antidiabetic",
+    quantity: 250,
+    price: 14,
+    expiryDate: "2027-08-20",
+    supplier: "United Pharma",
+  },
+  {
+    id: "m12",
+    name: "Nexium 40mg",
+    category: "Gastrointestinal",
+    quantity: 140,
+    price: 38,
     expiryDate: "2027-07-22",
-    isNearExpiry: false,
+    supplier: "Pharma Overseas",
   },
   {
-    id: 18n,
-    name: "Pantoloc",
-    category: "Ulcer & Others",
-    dosage: "20mg",
-    quantity: 120n,
-    supplierId: 3n,
-    purchasePrice: 5.46,
-    salePrice: 7.8,
-    expiryDate: "2026-12-05",
-    isNearExpiry: false,
+    id: "m13",
+    name: "Flagyl 500mg",
+    category: "Antibiotics",
+    quantity: 130,
+    price: 20,
+    expiryDate: "2026-10-31",
+    supplier: "Al-Ezaby",
   },
   {
-    id: 19n,
-    name: "Ator",
-    category: "Ulcer & Others",
-    dosage: "20mg",
-    quantity: 100n,
-    supplierId: 4n,
-    purchasePrice: 5.95,
-    salePrice: 8.5,
-    expiryDate: "2027-02-14",
-    isNearExpiry: false,
+    id: "m14",
+    name: "Pantoprazole 40mg",
+    category: "Gastrointestinal",
+    quantity: 18,
+    price: 25,
+    expiryDate: "2026-05-10",
+    supplier: "Ibn Sina",
   },
   {
-    id: 20n,
-    name: "Crestor",
-    category: "Ulcer & Others",
-    dosage: "10mg",
-    quantity: 110n,
-    supplierId: 1n,
-    purchasePrice: 9.8,
-    salePrice: 14.0,
-    expiryDate: "2027-09-18",
-    isNearExpiry: false,
-  },
-  {
-    id: 21n,
-    name: "Aspirin",
-    category: "Ulcer & Others",
-    dosage: "100mg",
-    quantity: 300n,
-    supplierId: 4n,
-    purchasePrice: 1.75,
-    salePrice: 2.5,
-    expiryDate: "2027-11-30",
-    isNearExpiry: false,
-  },
-  {
-    id: 22n,
-    name: "Bisoprolol",
-    category: "Hypertension",
-    dosage: "5mg",
-    quantity: 150n,
-    supplierId: 2n,
-    purchasePrice: 4.2,
-    salePrice: 6.0,
-    expiryDate: "2027-01-25",
-    isNearExpiry: false,
-  },
-  {
-    id: 23n,
-    name: "Metformin",
-    category: "Diabetes",
-    dosage: "850mg",
-    quantity: 200n,
-    supplierId: 3n,
-    purchasePrice: 3.33,
-    salePrice: 4.75,
-    expiryDate: "2027-06-10",
-    isNearExpiry: false,
-  },
-  {
-    id: 24n,
-    name: "Omeprazole",
-    category: "Ulcer & Others",
-    dosage: "20mg",
-    quantity: 180n,
-    supplierId: 4n,
-    purchasePrice: 2.66,
-    salePrice: 3.8,
-    expiryDate: "2027-10-05",
-    isNearExpiry: false,
+    id: "m15",
+    name: "Lisinopril 10mg",
+    category: "Antihypertensive",
+    quantity: 110,
+    price: 30,
+    expiryDate: "2026-12-15",
+    supplier: "United Pharma",
   },
 ];
 
-const SEED_SUPPLIERS: StoreSupplier[] = [
+const SEED_SUPPLIERS: Supplier[] = [
   {
-    id: 1n,
+    id: "s1",
     name: "Ibn Sina",
-    contact: JSON.stringify({
-      phone: "+20-2-2345-6789",
-      address: "Cairo, Egypt",
-      email: "ibnsina@pharma.eg",
-    }),
+    contact: "01001234567",
+    email: "ibnsina@pharma.com",
+    suppliedMedicines: [
+      "Augmentin 1g",
+      "Amoxicillin 250mg",
+      "Aspirin 100mg",
+      "Pantoprazole 40mg",
+    ],
   },
   {
-    id: 2n,
+    id: "s2",
     name: "Pharma Overseas",
-    contact: JSON.stringify({
-      phone: "+44-20-7946-0958",
-      address: "London, UK",
-      email: "overseas@pharmaint.co.uk",
-    }),
+    contact: "01112345678",
+    email: "overseas@pharma.com",
+    suppliedMedicines: [
+      "ConCor 5mg",
+      "ConCor 2.5mg",
+      "Atorvastatin 10mg",
+      "Nexium 40mg",
+    ],
   },
   {
-    id: 3n,
+    id: "s3",
     name: "United Pharma",
-    contact: JSON.stringify({
-      phone: "+20-2-3456-7890",
-      address: "Alexandria, Egypt",
-      email: "info@unitedpharma.eg",
-    }),
+    contact: "01223456789",
+    email: "united@pharma.com",
+    suppliedMedicines: [
+      "ErastaPex 20mg",
+      "Metformin 500mg",
+      "Glucophage 500mg",
+      "Lisinopril 10mg",
+    ],
   },
   {
-    id: 4n,
+    id: "s4",
     name: "Al-Ezaby",
-    contact: JSON.stringify({
-      phone: "+20-2-4567-8901",
-      address: "Giza, Egypt",
-      email: "supply@alezaby.com",
-    }),
+    contact: "01334567890",
+    email: "alezaby@pharma.com",
+    suppliedMedicines: ["Paracetamol 500mg", "Omeprazole 20mg", "Flagyl 500mg"],
   },
 ];
 
-const SEED_SALES: StoreSale[] = [
+const SEED_SALES: Sale[] = [
   {
-    id: 1n,
-    medicineId: 6n,
+    id: "sl1",
     medicineName: "Augmentin 1g",
-    category: "Antibiotics",
-    quantity: 2n,
-    salePrice: 15.5,
-    totalPrice: 31.0,
-    patientName: "Ahmed Hassan",
-    saleDate: "2026-01-03",
-    purchasePrice: 10.85,
+    quantity: 3,
+    price: 45,
+    total: 135,
+    date: "2026-01-05",
   },
   {
-    id: 2n,
-    medicineId: 13n,
-    medicineName: "Glucophage 500mg",
-    category: "Diabetes",
-    quantity: 3n,
-    salePrice: 5.5,
-    totalPrice: 16.5,
-    patientName: "Fatima Ali",
-    saleDate: "2026-01-05",
-    purchasePrice: 3.85,
+    id: "sl2",
+    medicineName: "Paracetamol 500mg",
+    quantity: 10,
+    price: 5,
+    total: 50,
+    date: "2026-01-07",
   },
   {
-    id: 3n,
-    medicineId: 1n,
-    medicineName: "ConCor 2.5mg",
-    category: "Hypertension",
-    quantity: 1n,
-    salePrice: 4.5,
-    totalPrice: 4.5,
-    patientName: "Mohamed Samir",
-    saleDate: "2026-01-06",
-    purchasePrice: 3.15,
-  },
-  {
-    id: 4n,
-    medicineId: 8n,
-    medicineName: "Tavanic 500mg",
-    category: "Antibiotics",
-    quantity: 2n,
-    salePrice: 18.0,
-    totalPrice: 36.0,
-    patientName: "Sara Khalil",
-    saleDate: "2026-01-08",
-    purchasePrice: 12.6,
-  },
-  {
-    id: 5n,
-    medicineId: 11n,
-    medicineName: "Amaryl 1mg",
-    category: "Diabetes",
-    quantity: 2n,
-    salePrice: 9.5,
-    totalPrice: 19.0,
-    patientName: "Omar Farouk",
-    saleDate: "2026-01-10",
-    purchasePrice: 6.65,
-  },
-  {
-    id: 6n,
-    medicineId: 16n,
-    medicineName: "Controloc 40mg",
-    category: "Ulcer & Others",
-    quantity: 1n,
-    salePrice: 9.25,
-    totalPrice: 9.25,
-    patientName: "Layla Nasser",
-    saleDate: "2026-01-12",
-    purchasePrice: 6.48,
-  },
-  {
-    id: 7n,
-    medicineId: 14n,
-    medicineName: "Glucophage 1000mg",
-    category: "Diabetes",
-    quantity: 3n,
-    salePrice: 8.0,
-    totalPrice: 24.0,
-    patientName: "Karim Adel",
-    saleDate: "2026-01-14",
-    purchasePrice: 5.6,
-  },
-  {
-    id: 8n,
-    medicineId: 7n,
-    medicineName: "SupraX 400mg",
-    category: "Antibiotics",
-    quantity: 1n,
-    salePrice: 12.0,
-    totalPrice: 12.0,
-    patientName: "Nour Ibrahim",
-    saleDate: "2026-01-15",
-    purchasePrice: 8.4,
-  },
-  {
-    id: 9n,
-    medicineId: 3n,
-    medicineName: "ConCor 10mg",
-    category: "Hypertension",
-    quantity: 2n,
-    salePrice: 7.2,
-    totalPrice: 14.4,
-    patientName: "Hana Mostafa",
-    saleDate: "2026-01-17",
-    purchasePrice: 5.04,
-  },
-  {
-    id: 10n,
-    medicineId: 17n,
-    medicineName: "Nexium 40mg",
-    category: "Ulcer & Others",
-    quantity: 2n,
-    salePrice: 11.5,
-    totalPrice: 23.0,
-    patientName: "Tarek Saleh",
-    saleDate: "2026-01-19",
-    purchasePrice: 8.05,
-  },
-  {
-    id: 11n,
-    medicineId: 12n,
-    medicineName: "Amaryl 2mg",
-    category: "Diabetes",
-    quantity: 1n,
-    salePrice: 12.0,
-    totalPrice: 12.0,
-    patientName: "Rana Mahmoud",
-    saleDate: "2026-01-21",
-    purchasePrice: 8.4,
-  },
-  {
-    id: 12n,
-    medicineId: 5n,
-    medicineName: "ErastaPex 40mg",
-    category: "Hypertension",
-    quantity: 2n,
-    salePrice: 11.0,
-    totalPrice: 22.0,
-    patientName: "Youssef Amr",
-    saleDate: "2026-01-22",
-    purchasePrice: 7.7,
-  },
-  {
-    id: 13n,
-    medicineId: 20n,
-    medicineName: "Crestor 10mg",
-    category: "Ulcer & Others",
-    quantity: 1n,
-    salePrice: 14.0,
-    totalPrice: 14.0,
-    patientName: "Dina Sami",
-    saleDate: "2026-01-24",
-    purchasePrice: 9.8,
-  },
-  {
-    id: 14n,
-    medicineId: 9n,
-    medicineName: "Ceftriaxone 1g",
-    category: "Antibiotics",
-    quantity: 2n,
-    salePrice: 22.5,
-    totalPrice: 45.0,
-    patientName: "Walid Fathy",
-    saleDate: "2026-01-25",
-    purchasePrice: 15.75,
-  },
-  {
-    id: 15n,
-    medicineId: 15n,
-    medicineName: "Galvus Met 50/1000mg",
-    category: "Diabetes",
-    quantity: 1n,
-    salePrice: 24.0,
-    totalPrice: 24.0,
-    patientName: "Mona Zaki",
-    saleDate: "2026-01-27",
-    purchasePrice: 16.8,
-  },
-  {
-    id: 16n,
-    medicineId: 18n,
-    medicineName: "Pantoloc 20mg",
-    category: "Ulcer & Others",
-    quantity: 2n,
-    salePrice: 7.8,
-    totalPrice: 15.6,
-    patientName: "Khaled Gamal",
-    saleDate: "2026-01-29",
-    purchasePrice: 5.46,
-  },
-  {
-    id: 17n,
-    medicineId: 2n,
+    id: "sl3",
     medicineName: "ConCor 5mg",
-    category: "Hypertension",
-    quantity: 1n,
-    salePrice: 5.75,
-    totalPrice: 5.75,
-    patientName: "Amira Hossam",
-    saleDate: "2026-01-31",
-    purchasePrice: 4.03,
+    quantity: 2,
+    price: 32,
+    total: 64,
+    date: "2026-01-10",
   },
   {
-    id: 18n,
-    medicineId: 6n,
-    medicineName: "Augmentin 1g",
-    category: "Antibiotics",
-    quantity: 3n,
-    salePrice: 15.5,
-    totalPrice: 46.5,
-    patientName: "Hassan Youssef",
-    saleDate: "2026-02-02",
-    purchasePrice: 10.85,
+    id: "sl4",
+    medicineName: "Metformin 500mg",
+    quantity: 5,
+    price: 12,
+    total: 60,
+    date: "2026-01-12",
   },
   {
-    id: 19n,
-    medicineId: 13n,
-    medicineName: "Glucophage 500mg",
-    category: "Diabetes",
-    quantity: 2n,
-    salePrice: 5.5,
-    totalPrice: 11.0,
-    patientName: "Nadia Hamid",
-    saleDate: "2026-02-03",
-    purchasePrice: 3.85,
-  },
-  {
-    id: 20n,
-    medicineId: 10n,
-    medicineName: "Flagyl 500mg",
-    category: "Antibiotics",
-    quantity: 2n,
-    salePrice: 6.75,
-    totalPrice: 13.5,
-    patientName: "Sherif Taha",
-    saleDate: "2026-02-05",
-    purchasePrice: 4.73,
-  },
-  {
-    id: 21n,
-    medicineId: 4n,
-    medicineName: "ErastaPex 20mg",
-    category: "Hypertension",
-    quantity: 1n,
-    salePrice: 8.5,
-    totalPrice: 8.5,
-    patientName: "Ghada Shawky",
-    saleDate: "2026-02-07",
-    purchasePrice: 5.95,
-  },
-  {
-    id: 22n,
-    medicineId: 14n,
-    medicineName: "Glucophage 1000mg",
-    category: "Diabetes",
-    quantity: 4n,
-    salePrice: 8.0,
-    totalPrice: 32.0,
-    patientName: "Bassem Ragab",
-    saleDate: "2026-02-08",
-    purchasePrice: 5.6,
-  },
-  {
-    id: 23n,
-    medicineId: 7n,
-    medicineName: "SupraX 400mg",
-    category: "Antibiotics",
-    quantity: 2n,
-    salePrice: 12.0,
-    totalPrice: 24.0,
-    patientName: "Marwa Salem",
-    saleDate: "2026-02-10",
-    purchasePrice: 8.4,
-  },
-  {
-    id: 24n,
-    medicineId: 11n,
-    medicineName: "Amaryl 1mg",
-    category: "Diabetes",
-    quantity: 1n,
-    salePrice: 9.5,
-    totalPrice: 9.5,
-    patientName: "Islam Gohar",
-    saleDate: "2026-02-12",
-    purchasePrice: 6.65,
-  },
-  {
-    id: 25n,
-    medicineId: 16n,
-    medicineName: "Controloc 40mg",
-    category: "Ulcer & Others",
-    quantity: 3n,
-    salePrice: 9.25,
-    totalPrice: 27.75,
-    patientName: "Doaa Farid",
-    saleDate: "2026-02-13",
-    purchasePrice: 6.48,
-  },
-  {
-    id: 26n,
-    medicineId: 1n,
-    medicineName: "ConCor 2.5mg",
-    category: "Hypertension",
-    quantity: 2n,
-    salePrice: 4.5,
-    totalPrice: 9.0,
-    patientName: "Ramy Khalil",
-    saleDate: "2026-02-15",
-    purchasePrice: 3.15,
-  },
-  {
-    id: 27n,
-    medicineId: 22n,
-    medicineName: "Bisoprolol 5mg",
-    category: "Hypertension",
-    quantity: 1n,
-    salePrice: 6.0,
-    totalPrice: 6.0,
-    patientName: "Heba Nabil",
-    saleDate: "2026-02-17",
-    purchasePrice: 4.2,
-  },
-  {
-    id: 28n,
-    medicineId: 24n,
-    medicineName: "Omeprazole 20mg",
-    category: "Ulcer & Others",
-    quantity: 2n,
-    salePrice: 3.8,
-    totalPrice: 7.6,
-    patientName: "Tamer Bahgat",
-    saleDate: "2026-02-18",
-    purchasePrice: 2.66,
-  },
-  {
-    id: 29n,
-    medicineId: 19n,
-    medicineName: "Ator 20mg",
-    category: "Ulcer & Others",
-    quantity: 1n,
-    salePrice: 8.5,
-    totalPrice: 8.5,
-    patientName: "Noha Wahid",
-    saleDate: "2026-02-20",
-    purchasePrice: 5.95,
-  },
-  {
-    id: 30n,
-    medicineId: 23n,
-    medicineName: "Metformin 850mg",
-    category: "Diabetes",
-    quantity: 3n,
-    salePrice: 4.75,
-    totalPrice: 14.25,
-    patientName: "Mahmoud Saeed",
-    saleDate: "2026-02-22",
-    purchasePrice: 3.33,
-  },
-  {
-    id: 31n,
-    medicineId: 9n,
-    medicineName: "Ceftriaxone 1g",
-    category: "Antibiotics",
-    quantity: 1n,
-    salePrice: 22.5,
-    totalPrice: 22.5,
-    patientName: "Salma Adel",
-    saleDate: "2026-02-24",
-    purchasePrice: 15.75,
-  },
-  {
-    id: 32n,
-    medicineId: 3n,
-    medicineName: "ConCor 10mg",
-    category: "Hypertension",
-    quantity: 2n,
-    salePrice: 7.2,
-    totalPrice: 14.4,
-    patientName: "Kamal Ibrahim",
-    saleDate: "2026-02-26",
-    purchasePrice: 5.04,
-  },
-  {
-    id: 33n,
-    medicineId: 17n,
-    medicineName: "Nexium 40mg",
-    category: "Ulcer & Others",
-    quantity: 1n,
-    salePrice: 11.5,
-    totalPrice: 11.5,
-    patientName: "Yasmine Fawzy",
-    saleDate: "2026-02-28",
-    purchasePrice: 8.05,
-  },
-  {
-    id: 34n,
-    medicineId: 20n,
-    medicineName: "Crestor 10mg",
-    category: "Ulcer & Others",
-    quantity: 2n,
-    salePrice: 14.0,
-    totalPrice: 28.0,
-    patientName: "Adel Mansour",
-    saleDate: "2026-03-01",
-    purchasePrice: 9.8,
-  },
-  {
-    id: 35n,
-    medicineId: 5n,
-    medicineName: "ErastaPex 40mg",
-    category: "Hypertension",
-    quantity: 1n,
-    salePrice: 11.0,
-    totalPrice: 11.0,
-    patientName: "Rania Khalaf",
-    saleDate: "2026-03-03",
-    purchasePrice: 7.7,
-  },
-  {
-    id: 36n,
-    medicineId: 12n,
-    medicineName: "Amaryl 2mg",
-    category: "Diabetes",
-    quantity: 2n,
-    salePrice: 12.0,
-    totalPrice: 24.0,
-    patientName: "Sameh Naggar",
-    saleDate: "2026-03-05",
-    purchasePrice: 8.4,
-  },
-  {
-    id: 37n,
-    medicineId: 8n,
-    medicineName: "Tavanic 500mg",
-    category: "Antibiotics",
-    quantity: 1n,
-    salePrice: 18.0,
-    totalPrice: 18.0,
-    patientName: "Eman Saber",
-    saleDate: "2026-03-07",
-    purchasePrice: 12.6,
-  },
-  {
-    id: 38n,
-    medicineId: 15n,
-    medicineName: "Galvus Met 50/1000mg",
-    category: "Diabetes",
-    quantity: 2n,
-    salePrice: 24.0,
-    totalPrice: 48.0,
-    patientName: "Mostafa Zidan",
-    saleDate: "2026-03-08",
-    purchasePrice: 16.8,
-  },
-  {
-    id: 39n,
-    medicineId: 21n,
+    id: "sl5",
     medicineName: "Aspirin 100mg",
-    category: "Ulcer & Others",
-    quantity: 4n,
-    salePrice: 2.5,
-    totalPrice: 10.0,
-    patientName: "Lamia Hamdan",
-    saleDate: "2026-03-10",
-    purchasePrice: 1.75,
+    quantity: 8,
+    price: 8,
+    total: 64,
+    date: "2026-01-15",
   },
   {
-    id: 40n,
-    medicineId: 10n,
-    medicineName: "Flagyl 500mg",
-    category: "Antibiotics",
-    quantity: 3n,
-    salePrice: 6.75,
-    totalPrice: 20.25,
-    patientName: "Ihab Wahba",
-    saleDate: "2026-03-12",
-    purchasePrice: 4.73,
+    id: "sl6",
+    medicineName: "Amoxicillin 250mg",
+    quantity: 4,
+    price: 18,
+    total: 72,
+    date: "2026-01-18",
   },
   {
-    id: 41n,
-    medicineId: 4n,
-    medicineName: "ErastaPex 20mg",
-    category: "Hypertension",
-    quantity: 2n,
-    salePrice: 8.5,
-    totalPrice: 17.0,
-    patientName: "Sahar Tawfik",
-    saleDate: "2026-03-14",
-    purchasePrice: 5.95,
-  },
-  {
-    id: 42n,
-    medicineId: 18n,
-    medicineName: "Pantoloc 20mg",
-    category: "Ulcer & Others",
-    quantity: 1n,
-    salePrice: 7.8,
-    totalPrice: 7.8,
-    patientName: "Tarek Amin",
-    saleDate: "2026-03-15",
-    purchasePrice: 5.46,
-  },
-  {
-    id: 43n,
-    medicineId: 13n,
-    medicineName: "Glucophage 500mg",
-    category: "Diabetes",
-    quantity: 2n,
-    salePrice: 5.5,
-    totalPrice: 11.0,
-    patientName: "Asmaa Lotfy",
-    saleDate: "2026-03-17",
-    purchasePrice: 3.85,
-  },
-  {
-    id: 44n,
-    medicineId: 2n,
-    medicineName: "ConCor 5mg",
-    category: "Hypertension",
-    quantity: 1n,
-    salePrice: 5.75,
-    totalPrice: 5.75,
-    patientName: "Sherif Barakat",
-    saleDate: "2026-03-19",
-    purchasePrice: 4.03,
-  },
-  {
-    id: 45n,
-    medicineId: 24n,
+    id: "sl7",
     medicineName: "Omeprazole 20mg",
-    category: "Ulcer & Others",
-    quantity: 3n,
-    salePrice: 3.8,
-    totalPrice: 11.4,
-    patientName: "Nermeen Kamal",
-    saleDate: "2026-03-20",
-    purchasePrice: 2.66,
+    quantity: 3,
+    price: 22,
+    total: 66,
+    date: "2026-01-20",
   },
   {
-    id: 46n,
-    medicineId: 22n,
-    medicineName: "Bisoprolol 5mg",
-    category: "Hypertension",
-    quantity: 2n,
-    salePrice: 6.0,
-    totalPrice: 12.0,
-    patientName: "Ahmed Gaber",
-    saleDate: "2026-03-21",
-    purchasePrice: 4.2,
+    id: "sl8",
+    medicineName: "ErastaPex 20mg",
+    quantity: 2,
+    price: 55,
+    total: 110,
+    date: "2026-01-22",
   },
   {
-    id: 47n,
-    medicineId: 6n,
+    id: "sl9",
+    medicineName: "Glucophage 500mg",
+    quantity: 6,
+    price: 14,
+    total: 84,
+    date: "2026-01-25",
+  },
+  {
+    id: "sl10",
+    medicineName: "Nexium 40mg",
+    quantity: 3,
+    price: 38,
+    total: 114,
+    date: "2026-01-28",
+  },
+  {
+    id: "sl11",
     medicineName: "Augmentin 1g",
-    category: "Antibiotics",
-    quantity: 2n,
-    salePrice: 15.5,
-    totalPrice: 31.0,
-    patientName: "Dalia Ramadan",
-    saleDate: "2026-03-23",
-    purchasePrice: 10.85,
+    quantity: 5,
+    price: 45,
+    total: 225,
+    date: "2026-02-02",
   },
   {
-    id: 48n,
-    medicineId: 11n,
-    medicineName: "Amaryl 1mg",
-    category: "Diabetes",
-    quantity: 1n,
-    salePrice: 9.5,
-    totalPrice: 9.5,
-    patientName: "Ossama Helal",
-    saleDate: "2026-03-25",
-    purchasePrice: 6.65,
+    id: "sl12",
+    medicineName: "Atorvastatin 10mg",
+    quantity: 4,
+    price: 35,
+    total: 140,
+    date: "2026-02-05",
   },
   {
-    id: 49n,
-    medicineId: 19n,
-    medicineName: "Ator 20mg",
-    category: "Ulcer & Others",
-    quantity: 2n,
-    salePrice: 8.5,
-    totalPrice: 17.0,
-    patientName: "Ghada Nour",
-    saleDate: "2026-03-27",
-    purchasePrice: 5.95,
+    id: "sl13",
+    medicineName: "Paracetamol 500mg",
+    quantity: 15,
+    price: 5,
+    total: 75,
+    date: "2026-02-07",
   },
   {
-    id: 50n,
-    medicineId: 23n,
-    medicineName: "Metformin 850mg",
-    category: "Diabetes",
-    quantity: 2n,
-    salePrice: 4.75,
-    totalPrice: 9.5,
-    patientName: "Medhat Selim",
-    saleDate: "2026-03-28",
-    purchasePrice: 3.33,
+    id: "sl14",
+    medicineName: "ConCor 2.5mg",
+    quantity: 3,
+    price: 28,
+    total: 84,
+    date: "2026-02-10",
+  },
+  {
+    id: "sl15",
+    medicineName: "Flagyl 500mg",
+    quantity: 4,
+    price: 20,
+    total: 80,
+    date: "2026-02-12",
+  },
+  {
+    id: "sl16",
+    medicineName: "Aspirin 100mg",
+    quantity: 10,
+    price: 8,
+    total: 80,
+    date: "2026-02-14",
+  },
+  {
+    id: "sl17",
+    medicineName: "Metformin 500mg",
+    quantity: 7,
+    price: 12,
+    total: 84,
+    date: "2026-02-16",
+  },
+  {
+    id: "sl18",
+    medicineName: "Lisinopril 10mg",
+    quantity: 5,
+    price: 30,
+    total: 150,
+    date: "2026-02-18",
+  },
+  {
+    id: "sl19",
+    medicineName: "Amoxicillin 250mg",
+    quantity: 6,
+    price: 18,
+    total: 108,
+    date: "2026-02-20",
+  },
+  {
+    id: "sl20",
+    medicineName: "Nexium 40mg",
+    quantity: 4,
+    price: 38,
+    total: 152,
+    date: "2026-02-22",
+  },
+  {
+    id: "sl21",
+    medicineName: "Augmentin 1g",
+    quantity: 4,
+    price: 45,
+    total: 180,
+    date: "2026-02-25",
+  },
+  {
+    id: "sl22",
+    medicineName: "Glucophage 500mg",
+    quantity: 8,
+    price: 14,
+    total: 112,
+    date: "2026-02-27",
+  },
+  {
+    id: "sl23",
+    medicineName: "ErastaPex 20mg",
+    quantity: 3,
+    price: 55,
+    total: 165,
+    date: "2026-03-01",
+  },
+  {
+    id: "sl24",
+    medicineName: "Paracetamol 500mg",
+    quantity: 20,
+    price: 5,
+    total: 100,
+    date: "2026-03-03",
+  },
+  {
+    id: "sl25",
+    medicineName: "ConCor 5mg",
+    quantity: 2,
+    price: 32,
+    total: 64,
+    date: "2026-03-05",
+  },
+  {
+    id: "sl26",
+    medicineName: "Atorvastatin 10mg",
+    quantity: 5,
+    price: 35,
+    total: 175,
+    date: "2026-03-07",
+  },
+  {
+    id: "sl27",
+    medicineName: "Omeprazole 20mg",
+    quantity: 2,
+    price: 22,
+    total: 44,
+    date: "2026-03-09",
+  },
+  {
+    id: "sl28",
+    medicineName: "Flagyl 500mg",
+    quantity: 6,
+    price: 20,
+    total: 120,
+    date: "2026-03-11",
+  },
+  {
+    id: "sl29",
+    medicineName: "Aspirin 100mg",
+    quantity: 12,
+    price: 8,
+    total: 96,
+    date: "2026-03-13",
+  },
+  {
+    id: "sl30",
+    medicineName: "Metformin 500mg",
+    quantity: 8,
+    price: 12,
+    total: 96,
+    date: "2026-03-15",
+  },
+  {
+    id: "sl31",
+    medicineName: "Amoxicillin 250mg",
+    quantity: 5,
+    price: 18,
+    total: 90,
+    date: "2026-03-17",
+  },
+  {
+    id: "sl32",
+    medicineName: "Nexium 40mg",
+    quantity: 3,
+    price: 38,
+    total: 114,
+    date: "2026-03-19",
+  },
+  {
+    id: "sl33",
+    medicineName: "ConCor 2.5mg",
+    quantity: 4,
+    price: 28,
+    total: 112,
+    date: "2026-03-21",
+  },
+  {
+    id: "sl34",
+    medicineName: "Augmentin 1g",
+    quantity: 6,
+    price: 45,
+    total: 270,
+    date: "2026-03-23",
+  },
+  {
+    id: "sl35",
+    medicineName: "Glucophage 500mg",
+    quantity: 10,
+    price: 14,
+    total: 140,
+    date: "2026-03-25",
+  },
+  {
+    id: "sl36",
+    medicineName: "Lisinopril 10mg",
+    quantity: 4,
+    price: 30,
+    total: 120,
+    date: "2026-03-27",
+  },
+  {
+    id: "sl37",
+    medicineName: "Pantoprazole 40mg",
+    quantity: 3,
+    price: 25,
+    total: 75,
+    date: "2026-03-29",
+  },
+  {
+    id: "sl38",
+    medicineName: "ErastaPex 20mg",
+    quantity: 2,
+    price: 55,
+    total: 110,
+    date: "2026-03-30",
+  },
+  {
+    id: "sl39",
+    medicineName: "Paracetamol 500mg",
+    quantity: 18,
+    price: 5,
+    total: 90,
+    date: "2026-03-31",
+  },
+  {
+    id: "sl40",
+    medicineName: "Atorvastatin 10mg",
+    quantity: 3,
+    price: 35,
+    total: 105,
+    date: "2026-03-31",
   },
 ];
 
-// ── Context ──────────────────────────────────────────────────────────────────
-interface PharmacyStoreContextType {
-  medicines: StoreMedicine[];
-  suppliers: StoreSupplier[];
-  sales: StoreSale[];
+// ── Context Type ─────────────────────────────────────────────────────────────
+interface PharmacyContextValue {
+  medicines: Medicine[];
+  suppliers: Supplier[];
+  sales: Sale[];
+  // Derived
   totalRevenue: number;
-  totalMedicines: number;
   totalSales: number;
-  addMedicine: (data: Omit<StoreMedicine, "id">) => Promise<void>;
-  updateMedicine: (
-    id: bigint,
-    data: Omit<StoreMedicine, "id">,
-  ) => Promise<void>;
-  deleteMedicine: (id: bigint) => Promise<void>;
-  addSupplier: (data: Omit<StoreSupplier, "id">) => Promise<void>;
-  updateSupplier: (
-    id: bigint,
-    data: Omit<StoreSupplier, "id">,
-  ) => Promise<void>;
-  deleteSupplier: (id: bigint) => Promise<void>;
-  recordSale: (data: {
-    medicineId: bigint;
-    quantity: bigint;
-    patientName: string;
-    saleDate: string;
-  }) => Promise<StoreSale | null>;
+  totalMedicines: number;
+  totalSuppliers: number;
+  lowStockMedicines: Medicine[];
+  nearExpiryMedicines: Medicine[];
+  topSellingMedicines: { name: string; qty: number }[];
+  monthlyRevenue: { month: string; revenue: number }[];
+  monthlySales: { month: string; count: number }[];
+  // CRUD
+  addMedicine: (m: Omit<Medicine, "id">) => string | null;
+  updateMedicine: (id: string, updates: Partial<Medicine>) => void;
+  deleteMedicine: (id: string) => void;
+  addSupplier: (s: Omit<Supplier, "id">) => string | null;
+  updateSupplier: (id: string, updates: Partial<Supplier>) => void;
+  deleteSupplier: (id: string) => void;
+  addSale: (sale: Omit<Sale, "id">) => string | null;
+  updateSale: (id: string, updates: Partial<Sale>) => void;
+  deleteSale: (id: string) => void;
 }
 
-const PharmacyStoreContext = createContext<PharmacyStoreContextType | null>(
-  null,
-);
+const PharmacyContext = createContext<PharmacyContextValue | null>(null);
+
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 export function PharmacyStoreProvider({
   children,
 }: { children: React.ReactNode }) {
-  const { actor } = useActor();
-  const [medicines, setMedicines] = useState<StoreMedicine[]>(SEED_MEDICINES);
-  const [suppliers, setSuppliers] = useState<StoreSupplier[]>(SEED_SUPPLIERS);
-  const [sales, setSales] = useState<StoreSale[]>(SEED_SALES);
-  const nextMedId = useRef(BigInt(SEED_MEDICINES.length + 1));
-  const nextSupId = useRef(BigInt(SEED_SUPPLIERS.length + 1));
-  const nextSaleId = useRef(BigInt(SEED_SALES.length + 1));
+  const [medicines, setMedicines] = useState<Medicine[]>(SEED_MEDICINES);
+  const [suppliers, setSuppliers] = useState<Supplier[]>(SEED_SUPPLIERS);
+  const [sales, setSales] = useState<Sale[]>(SEED_SALES);
 
+  // ── CRUD: Medicines ──
   const addMedicine = useCallback(
-    async (data: Omit<StoreMedicine, "id">) => {
-      const id = nextMedId.current++;
-      setMedicines((prev) => [...prev, { ...data, id }]);
-      try {
-        if (actor)
-          await actor.addMedicine(
-            data.name,
-            data.category,
-            data.dosage,
-            data.quantity,
-            data.supplierId,
-            data.purchasePrice,
-            data.salePrice,
-            data.expiryDate,
-            data.isNearExpiry,
-          );
-      } catch {
-        /* silent */
-      }
+    (m: Omit<Medicine, "id">): string | null => {
+      const dup = medicines.find(
+        (x) => x.name.trim().toLowerCase() === m.name.trim().toLowerCase(),
+      );
+      if (dup) return "This medicine already exists.";
+      const id = `m${Date.now()}`;
+      setMedicines((prev) => [...prev, { ...m, id }]);
+      return null;
     },
-    [actor],
+    [medicines],
   );
 
   const updateMedicine = useCallback(
-    async (id: bigint, data: Omit<StoreMedicine, "id">) => {
+    (id: string, updates: Partial<Medicine>) => {
       setMedicines((prev) =>
-        prev.map((m) => (m.id === id ? { ...data, id } : m)),
+        prev.map((m) => (m.id === id ? { ...m, ...updates } : m)),
       );
-      try {
-        if (actor)
-          await actor.updateMedicine(
-            id,
-            data.name,
-            data.category,
-            data.dosage,
-            data.quantity,
-            data.supplierId,
-            data.purchasePrice,
-            data.salePrice,
-            data.expiryDate,
-            data.isNearExpiry,
-          );
-      } catch {
-        /* silent */
-      }
     },
-    [actor],
+    [],
   );
 
-  const deleteMedicine = useCallback(
-    async (id: bigint) => {
-      setMedicines((prev) => prev.filter((m) => m.id !== id));
-      try {
-        if (actor) await actor.deleteMedicine(id);
-      } catch {
-        /* silent */
-      }
-    },
-    [actor],
-  );
+  const deleteMedicine = useCallback((id: string) => {
+    setMedicines((prev) => prev.filter((m) => m.id !== id));
+  }, []);
 
+  // ── CRUD: Suppliers ──
   const addSupplier = useCallback(
-    async (data: Omit<StoreSupplier, "id">) => {
-      const id = nextSupId.current++;
-      setSuppliers((prev) => [...prev, { ...data, id }]);
-      try {
-        if (actor) await actor.addSupplier(data.name, data.contact);
-      } catch {
-        /* silent */
-      }
+    (s: Omit<Supplier, "id">): string | null => {
+      const dup = suppliers.find(
+        (x) => x.name.trim().toLowerCase() === s.name.trim().toLowerCase(),
+      );
+      if (dup) return "This supplier already exists.";
+      const id = `s${Date.now()}`;
+      setSuppliers((prev) => [...prev, { ...s, id }]);
+      return null;
     },
-    [actor],
+    [suppliers],
   );
 
   const updateSupplier = useCallback(
-    async (id: bigint, data: Omit<StoreSupplier, "id">) => {
+    (id: string, updates: Partial<Supplier>) => {
       setSuppliers((prev) =>
-        prev.map((s) => (s.id === id ? { ...data, id } : s)),
+        prev.map((s) => (s.id === id ? { ...s, ...updates } : s)),
       );
-      try {
-        if (actor) await actor.updateSupplier(id, data.name, data.contact);
-      } catch {
-        /* silent */
-      }
     },
-    [actor],
+    [],
   );
 
-  const deleteSupplier = useCallback(
-    async (id: bigint) => {
-      setSuppliers((prev) => prev.filter((s) => s.id !== id));
-      try {
-        if (actor) await actor.deleteSupplier(id);
-      } catch {
-        /* silent */
-      }
-    },
-    [actor],
-  );
+  const deleteSupplier = useCallback((id: string) => {
+    setSuppliers((prev) => prev.filter((s) => s.id !== id));
+  }, []);
 
-  const recordSale = useCallback(
-    async (data: {
-      medicineId: bigint;
-      quantity: bigint;
-      patientName: string;
-      saleDate: string;
-    }): Promise<StoreSale | null> => {
-      const med = medicines.find((m) => m.id === data.medicineId);
-      if (!med) return null;
-      const qty = Number(data.quantity);
-      if (qty > Number(med.quantity)) return null;
-      const totalPrice = +(med.salePrice * qty).toFixed(2);
-      const id = nextSaleId.current++;
-      const sale: StoreSale = {
-        id,
-        medicineId: data.medicineId,
-        medicineName: `${med.name} ${med.dosage}`,
-        category: med.category,
-        quantity: data.quantity,
-        salePrice: med.salePrice,
-        totalPrice,
-        patientName: data.patientName,
-        saleDate: data.saleDate,
-        purchasePrice: med.purchasePrice,
-      };
-      setSales((prev) => [sale, ...prev]);
-      setMedicines((prev) =>
-        prev.map((m) =>
-          m.id === data.medicineId
-            ? { ...m, quantity: BigInt(Number(m.quantity) - qty) }
-            : m,
-        ),
-      );
-      try {
-        if (actor)
-          await actor.recordSale(
-            data.medicineId,
-            data.quantity,
-            data.patientName,
-            data.saleDate,
-          );
-      } catch {
-        /* silent */
-      }
-      return sale;
-    },
-    [actor, medicines],
-  );
+  // ── CRUD: Sales ──
+  const addSale = useCallback((sale: Omit<Sale, "id">): string | null => {
+    const id = `sl${Date.now()}`;
+    setSales((prev) => [...prev, { ...sale, id }]);
+    // Reduce stock
+    setMedicines((prev) =>
+      prev.map((m) =>
+        m.name === sale.medicineName
+          ? { ...m, quantity: Math.max(0, m.quantity - sale.quantity) }
+          : m,
+      ),
+    );
+    return null;
+  }, []);
 
+  const updateSale = useCallback((id: string, updates: Partial<Sale>) => {
+    setSales((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+    );
+  }, []);
+
+  const deleteSale = useCallback((id: string) => {
+    setSales((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
+  // ── Derived values ──
   const totalRevenue = useMemo(
-    () => sales.reduce((acc, s) => acc + s.totalPrice, 0),
+    () => sales.reduce((sum, s) => sum + s.total, 0),
     [sales],
   );
-  const totalMedicines = medicines.length;
-  const totalSales = sales.length;
+  const totalSales = useMemo(() => sales.length, [sales]);
+  const totalMedicines = useMemo(() => medicines.length, [medicines]);
+  const totalSuppliers = useMemo(() => suppliers.length, [suppliers]);
+
+  const lowStockMedicines = useMemo(
+    () => medicines.filter((m) => m.quantity <= 20),
+    [medicines],
+  );
+
+  const nearExpiryMedicines = useMemo(() => {
+    const threshold = new Date();
+    threshold.setDate(threshold.getDate() + 90);
+    return medicines.filter((m) => new Date(m.expiryDate) <= threshold);
+  }, [medicines]);
+
+  const topSellingMedicines = useMemo(() => {
+    const agg: Record<string, number> = {};
+    for (const s of sales) {
+      agg[s.medicineName] = (agg[s.medicineName] || 0) + s.quantity;
+    }
+    return Object.entries(agg)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, qty]) => ({ name, qty }));
+  }, [sales]);
+
+  const monthlyRevenue = useMemo(() => {
+    const now = new Date();
+    const result: { month: string; revenue: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const revenue = sales
+        .filter((s) => s.date.startsWith(key))
+        .reduce((sum, s) => sum + s.total, 0);
+      result.push({ month: MONTHS[d.getMonth()], revenue });
+    }
+    return result;
+  }, [sales]);
+
+  const monthlySales = useMemo(() => {
+    const now = new Date();
+    const result: { month: string; count: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const count = sales.filter((s) => s.date.startsWith(key)).length;
+      result.push({ month: MONTHS[d.getMonth()], count });
+    }
+    return result;
+  }, [sales]);
 
   return (
-    <PharmacyStoreContext.Provider
+    <PharmacyContext.Provider
       value={{
         medicines,
         suppliers,
         sales,
         totalRevenue,
-        totalMedicines,
         totalSales,
+        totalMedicines,
+        totalSuppliers,
+        lowStockMedicines,
+        nearExpiryMedicines,
+        topSellingMedicines,
+        monthlyRevenue,
+        monthlySales,
         addMedicine,
         updateMedicine,
         deleteMedicine,
         addSupplier,
         updateSupplier,
         deleteSupplier,
-        recordSale,
+        addSale,
+        updateSale,
+        deleteSale,
       }}
     >
       {children}
-    </PharmacyStoreContext.Provider>
+    </PharmacyContext.Provider>
   );
 }
 
-export function usePharmacyStore() {
-  const ctx = useContext(PharmacyStoreContext);
+export function usePharmacy(): PharmacyContextValue {
+  const ctx = useContext(PharmacyContext);
   if (!ctx)
-    throw new Error(
-      "usePharmacyStore must be used within PharmacyStoreProvider",
-    );
+    throw new Error("usePharmacy must be used within PharmacyStoreProvider");
   return ctx;
 }
